@@ -24,3 +24,4 @@
 
 com.tencent.bk.sdk.crypto.cryptor.impl.NoneCryptor
 com.tencent.bk.sdk.crypto.cryptor.impl.SM4Cryptor
+com.tencent.bk.sdk.crypto.cryptor.impl.AESCryptor

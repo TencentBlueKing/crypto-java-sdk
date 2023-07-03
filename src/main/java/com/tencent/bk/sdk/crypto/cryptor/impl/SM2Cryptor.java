@@ -33,6 +33,9 @@ import com.tencent.bk.sdk.crypto.util.SM2Util;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 
+/**
+ * 使用国密算法SM2的非对称加密实现
+ */
 @Cryptor(name = CryptorNames.SM2, type = CryptorTypeEnum.ASYMMETRIC, priority = 1)
 public class SM2Cryptor extends AbstractASymmetricCryptor {
 

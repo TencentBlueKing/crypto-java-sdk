@@ -22,15 +22,14 @@
  * IN THE SOFTWARE.
  */
 
-package com.tencent.bk.sdk.crypto.cryptor.consts;
+package com.tencent.bk.sdk.crypto.exception;
 
-public class CryptorNames {
-    // 不加密
-    public static final String NONE = "None";
-    // 对称加密
-    public static final String SM4 = "SM4";
-    public static final String AES = "AES";
-    // 非对称加密
-    public static final String SM2 = "SM2";
-    public static final String RSA = "RSA";
+/**
+ * 异常类：加解密异常
+ */
+public class CryptoException extends RuntimeException {
+
+    public CryptoException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

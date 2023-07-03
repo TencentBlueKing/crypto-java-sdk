@@ -28,21 +28,41 @@ import com.tencent.bk.sdk.crypto.annotation.Cryptor;
 import com.tencent.bk.sdk.crypto.annotation.CryptorTypeEnum;
 import com.tencent.bk.sdk.crypto.cryptor.AbstractSymmetricCryptor;
 import com.tencent.bk.sdk.crypto.cryptor.consts.CryptorNames;
-import com.tencent.bk.sdk.crypto.util.SM4Util;
+import com.tencent.bk.sdk.crypto.exception.CryptoException;
+import com.tencent.bk.sdk.crypto.util.AESUtil;
+import org.slf4j.helpers.FormattingTuple;
+import org.slf4j.helpers.MessageFormatter;
 
 /**
- * 使用国密算法SM4/CTR/NoPadding的加解密实现
+ * 使用AES/CTR/NoPadding的加密实现
  */
-@Cryptor(name = CryptorNames.SM4, type = CryptorTypeEnum.SYMMETRIC, priority = 1)
-public class SM4Cryptor extends AbstractSymmetricCryptor {
-
+@Cryptor(name = CryptorNames.AES, type = CryptorTypeEnum.SYMMETRIC)
+public class AESCryptor extends AbstractSymmetricCryptor {
     @Override
     public byte[] encrypt(byte[] key, byte[] message) {
-        return SM4Util.encrypt(key, message);
+        try {
+            return AESUtil.encrypt(message, key);
+        } catch (Exception e) {
+            FormattingTuple msg = MessageFormatter.format(
+                "Fail to encrypt using AES, key.len={}, message.len={}",
+                key.length,
+                message.length
+            );
+            throw new CryptoException(msg.getMessage(), e);
+        }
     }
 
     @Override
     public byte[] decrypt(byte[] key, byte[] encryptedMessage) {
-        return SM4Util.decrypt(key, encryptedMessage);
+        try {
+            return AESUtil.decrypt(encryptedMessage, key);
+        } catch (Exception e) {
+            FormattingTuple msg = MessageFormatter.format(
+                "Fail to decrypt using AES, key.len={}, encryptedMessage.len={}",
+                key.length,
+                encryptedMessage.length
+            );
+            throw new CryptoException(msg.getMessage(), e);
+        }
     }
 }

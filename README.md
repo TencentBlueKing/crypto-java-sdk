@@ -9,11 +9,13 @@ crypto-java-sdk是蓝鲸Java系产品使用的一套加解密算法工具包，�
 ## Features
 
 对称加密：
-- SM4（使用国密算法SM4进行加解密）
+- SM4（使用国密算法SM4/CTR/NoPadding进行加解密）
+- AES（使用国际算法AES/CTR/NoPadding进行加解密）
 - None（用于某些不加密的场景）
 
 非对称加密：
 - SM2（使用国密算法SM2进行加解密）
+- RSA（使用国际算法RSA进行加解密）
 
 ## Getting started
 

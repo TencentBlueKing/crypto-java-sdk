@@ -48,7 +48,9 @@ class CryptorTest {
 
     private static SymmetricCryptor noneCryptor = null;
     private static SymmetricCryptor sm4Cryptor = null;
+    private static SymmetricCryptor aesCryptor = null;
     private static ASymmetricCryptor sm2Cryptor = null;
+    private static ASymmetricCryptor rsaCryptor = null;
 
     private static final String EMPTY_KEY = "";
     private static final byte[] EMPTY_KEY_BYTES = toBytes(EMPTY_KEY);
@@ -64,7 +66,9 @@ class CryptorTest {
     static void setup() {
         noneCryptor = SymmetricCryptorFactory.getCryptor(CryptorNames.NONE);
         sm4Cryptor = SymmetricCryptorFactory.getCryptor(CryptorNames.SM4);
+        aesCryptor = SymmetricCryptorFactory.getCryptor(CryptorNames.AES);
         sm2Cryptor = ASymmetricCryptorFactory.getCryptor(CryptorNames.SM2);
+        rsaCryptor = ASymmetricCryptorFactory.getCryptor(CryptorNames.RSA);
     }
 
     @Test
@@ -172,6 +176,54 @@ class CryptorTest {
     }
 
     @Test
+    void testAESCryptor() {
+        // 空值用例
+        // key与message同时为空，字节数组
+        byte[] emptyEncryptedMessageBytes = aesCryptor.encrypt(EMPTY_KEY_BYTES, EMPTY_MESSAGE_BYTES);
+        System.out.println("emptyEncryptedMessageBytes=" + toHex(emptyEncryptedMessageBytes));
+        byte[] emptyMessageBytesByEmptyKey = aesCryptor.decrypt(EMPTY_KEY_BYTES, emptyEncryptedMessageBytes);
+        assertArrayEquals(EMPTY_MESSAGE_BYTES, emptyMessageBytesByEmptyKey);
+        // key与message同时为空，字符串
+        String emptyEncryptedMessage = aesCryptor.encrypt(EMPTY_KEY, EMPTY_MESSAGE);
+        System.out.println("emptyEncryptedMessage=" + emptyEncryptedMessage);
+        String emptyMessageByEmptyKey = aesCryptor.decrypt(EMPTY_KEY, emptyEncryptedMessage);
+        assertEquals(EMPTY_MESSAGE, emptyMessageByEmptyKey);
+
+        // key为空，message不为空，字节数组
+        byte[] emptyKeyEncryptedMessageBytes = aesCryptor.encrypt(EMPTY_KEY_BYTES, MESSAGE_BYTES);
+        System.out.println("emptyKeyEncryptedMessageBytes=" + toHex(emptyKeyEncryptedMessageBytes));
+        byte[] messageBytesByEmptyKey = aesCryptor.decrypt(EMPTY_KEY_BYTES, emptyKeyEncryptedMessageBytes);
+        assertArrayEquals(MESSAGE_BYTES, messageBytesByEmptyKey);
+        // key为空，message不为空，字符串
+        String emptyKeyEncryptedMessage = aesCryptor.encrypt(EMPTY_KEY, MESSAGE);
+        System.out.println("emptyKeyEncryptedMessage=" + emptyKeyEncryptedMessage);
+        String messageByEmptyKey = aesCryptor.decrypt(EMPTY_KEY, emptyKeyEncryptedMessage);
+        assertEquals(MESSAGE, messageByEmptyKey);
+
+        // key不为空，message为空，字节数组
+        byte[] emptyMessageEncryptedMessageBytes = aesCryptor.encrypt(KEY_BYTES, EMPTY_MESSAGE_BYTES);
+        System.out.println("emptyMessageEncryptedMessageBytes=" + toHex(emptyMessageEncryptedMessageBytes));
+        byte[] emptyMessageBytesByNormalKey = aesCryptor.decrypt(KEY_BYTES, emptyMessageEncryptedMessageBytes);
+        assertArrayEquals(EMPTY_MESSAGE_BYTES, emptyMessageBytesByNormalKey);
+        // key不为空，message为空，字符串
+        String emptyMessageEncryptedMessage = aesCryptor.encrypt(KEY, EMPTY_MESSAGE);
+        System.out.println("emptyMessageEncryptedMessage=" + emptyMessageEncryptedMessage);
+        String emptyMessageByNormalKey = aesCryptor.decrypt(KEY, emptyMessageEncryptedMessage);
+        assertEquals(EMPTY_MESSAGE, emptyMessageByNormalKey);
+
+        // 一般用例，字节数组
+        byte[] realEncryptedMessageBytes = aesCryptor.encrypt(KEY_BYTES, MESSAGE_BYTES);
+        System.out.println("realEncryptedMessageBytes=" + toHex(realEncryptedMessageBytes));
+        byte[] normalMessageBytes = aesCryptor.decrypt(KEY_BYTES, realEncryptedMessageBytes);
+        assertArrayEquals(MESSAGE_BYTES, normalMessageBytes);
+        // 一般用例，字符串
+        String realEncryptedMessage = aesCryptor.encrypt(KEY, MESSAGE);
+        System.out.println("realEncryptedMessage=" + realEncryptedMessage);
+        String normalMessage = aesCryptor.decrypt(KEY, realEncryptedMessage);
+        assertEquals(MESSAGE, normalMessage);
+    }
+
+    @Test
     void testSM2Cryptor() {
         KeyPair keyPair = SM2Util.genKeyPair();
         // 仅支持非空message
@@ -185,4 +237,5 @@ class CryptorTest {
         String decryptedMessageStr = sm2Cryptor.decrypt(keyPair.getPrivate(), encryptedMessageStr);
         assertEquals(MESSAGE, decryptedMessageStr);
     }
+
 }

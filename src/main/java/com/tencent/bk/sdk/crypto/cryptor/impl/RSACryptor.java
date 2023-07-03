@@ -26,23 +26,47 @@ package com.tencent.bk.sdk.crypto.cryptor.impl;
 
 import com.tencent.bk.sdk.crypto.annotation.Cryptor;
 import com.tencent.bk.sdk.crypto.annotation.CryptorTypeEnum;
-import com.tencent.bk.sdk.crypto.cryptor.AbstractSymmetricCryptor;
+import com.tencent.bk.sdk.crypto.cryptor.AbstractASymmetricCryptor;
 import com.tencent.bk.sdk.crypto.cryptor.consts.CryptorNames;
-import com.tencent.bk.sdk.crypto.util.SM4Util;
+import com.tencent.bk.sdk.crypto.exception.CryptoException;
+import com.tencent.bk.sdk.crypto.util.RSAUtil;
+import org.slf4j.helpers.FormattingTuple;
+import org.slf4j.helpers.MessageFormatter;
+
+import java.security.PrivateKey;
+import java.security.PublicKey;
 
 /**
- * 使用国密算法SM4/CTR/NoPadding的加解密实现
+ * 使用RSA的非对称加密实现
  */
-@Cryptor(name = CryptorNames.SM4, type = CryptorTypeEnum.SYMMETRIC, priority = 1)
-public class SM4Cryptor extends AbstractSymmetricCryptor {
+@Cryptor(name = CryptorNames.RSA, type = CryptorTypeEnum.ASYMMETRIC, priority = 1)
+public class RSACryptor extends AbstractASymmetricCryptor {
 
     @Override
-    public byte[] encrypt(byte[] key, byte[] message) {
-        return SM4Util.encrypt(key, message);
+    public byte[] encrypt(PublicKey publicKey, byte[] message) {
+        try {
+            return RSAUtil.encryptToBytes(message, publicKey);
+        } catch (Exception e) {
+            FormattingTuple msg = MessageFormatter.format(
+                "Fail to encrypt using RSA, publicKey.len={}, message.len={}",
+                publicKey.getEncoded().length,
+                message.length
+            );
+            throw new CryptoException(msg.getMessage(), e);
+        }
     }
 
     @Override
-    public byte[] decrypt(byte[] key, byte[] encryptedMessage) {
-        return SM4Util.decrypt(key, encryptedMessage);
+    public byte[] decrypt(PrivateKey privateKey, byte[] encryptedMessage) {
+        try {
+            return RSAUtil.decryptToBytes(encryptedMessage, privateKey);
+        } catch (Exception e) {
+            FormattingTuple msg = MessageFormatter.format(
+                "Fail to decrypt using RSA, privateKey.len={}, encryptedMessage.len={}",
+                privateKey.getEncoded().length,
+                encryptedMessage.length
+            );
+            throw new CryptoException(msg.getMessage(), e);
+        }
     }
 }
