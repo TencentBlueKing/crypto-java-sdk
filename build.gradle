@@ -34,6 +34,7 @@ plugins {
     // Apply the java-library plugin to add support for Java Library
     id 'java-library'
     id 'maven-publish'
+    id 'signing'
 }
 
 repositories {
@@ -83,23 +84,87 @@ allprojects {
     }
 }
 
+group = "com.tencent.bk.sdk"
+version = "0.0.7"
+
 publishing {
     publications {
-        myLibrary(MavenPublication) {
-            groupId = "com.tencent.bk.sdk"
-            version = "0.0.6"
+        mavenJava(MavenPublication) {
+            artifactId = 'crypto-java-sdk'
             from components.java
+            pom {
+                name = 'crypto-java-sdk'
+                description = 'Tencent BlueKing crypto-java-sdk project'
+                url = 'https://github.com/TencentBlueKing/crypto-java-sdk'
+                licenses {
+                    license {
+                        name = 'MIT'
+                        url = 'https://github.com/TencentBlueKing/crypto-java-sdk/blob/master/LICENSE.txt'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'bk-job'
+                        name = 'bk-job'
+                        email = 'bk-job@tencent.com'
+                        roles = ['Manager']
+                    }
+                }
+                scm {
+                    url = 'https://github.com/TencentBlueKing/crypto-java-sdk'
+                    connection = 'scm:git:https://github.com/TencentBlueKing/crypto-java-sdk.git'
+                    developerConnection = 'scm:git:git@github.com:TencentBlueKing/crypto-java-sdk.git'
+                }
+            }
         }
     }
 
     repositories {
         maven {
-            name = 'crypto-java-sdk'
-            url = ''
+            name = 'MavenCentral'
+            // 正式包
+            def mavenRepoDeployUrl = System.getProperty("mavenRepoDeployUrl")
+            def mavenRepoUsername = System.getProperty("mavenRepoUsername")
+            def mavenRepoPassword = System.getProperty("mavenRepoPassword")
+
+            if (mavenRepoDeployUrl == null) {
+                mavenRepoDeployUrl = System.getenv("build_mavenRepoDeployUrl")
+            }
+
+            if (mavenRepoUsername == null) {
+                mavenRepoUsername = System.getenv("build_mavenRepoUsername")
+            }
+
+            if (mavenRepoPassword == null) {
+                mavenRepoPassword = System.getenv("build_mavenRepoPassword")
+            }
+
+            // 快照包
+            def snapshotMavenRepoDeployUrl = System.getProperty("snapshotMavenRepoDeployUrl")
+            def snapshotMavenRepoUsername = System.getProperty("snapshotMavenRepoUsername")
+            def snapshotMavenRepoPassword = System.getProperty("snapshotMavenRepoPassword")
+
+            if (snapshotMavenRepoDeployUrl == null) {
+                snapshotMavenRepoDeployUrl = System.getenv("build_snapshotMavenRepoDeployUrl")
+            }
+
+            if (snapshotMavenRepoUsername == null) {
+                snapshotMavenRepoUsername = System.getenv("build_snapshotMavenRepoUsername")
+            }
+
+            if (snapshotMavenRepoPassword == null) {
+                snapshotMavenRepoPassword = System.getenv("build_snapshotMavenRepoPassword")
+            }
+
+            url = System.getProperty("snapshot") == "true" ? snapshotMavenRepoDeployUrl : mavenRepoDeployUrl
             credentials {
-                username = System.getenv("MAVEN_REPO_USER")
-                password = System.getenv("MAVEN_REPO_PASSWORD")
+                username = System.getProperty("snapshot") == "true" ? snapshotMavenRepoUsername : mavenRepoUsername
+                password = System.getProperty("snapshot") == "true" ? snapshotMavenRepoPassword : mavenRepoPassword
             }
         }
     }
+}
+
+signing {
+    sign publishing.publications.mavenJava
 }

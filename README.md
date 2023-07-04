@@ -39,7 +39,7 @@ implementation "com.tencent.bk.sdk:crypto-java-sdk:${version}"
 
 #### 1. 引入依赖包
 Maven坐标：  
-com.tencent.bk.sdk:crypto-java-sdk:0.0.6  
+com.tencent.bk.sdk:crypto-java-sdk:0.0.7  
 
 
 #### 2. SDK对外提供的接口
