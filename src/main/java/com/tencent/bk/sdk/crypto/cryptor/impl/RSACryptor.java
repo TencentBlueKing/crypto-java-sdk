@@ -30,6 +30,7 @@ import com.tencent.bk.sdk.crypto.cryptor.AbstractASymmetricCryptor;
 import com.tencent.bk.sdk.crypto.cryptor.consts.CryptorNames;
 import com.tencent.bk.sdk.crypto.exception.CryptoException;
 import com.tencent.bk.sdk.crypto.util.RSAUtil;
+import lombok.NonNull;
 import org.slf4j.helpers.FormattingTuple;
 import org.slf4j.helpers.MessageFormatter;
 
@@ -43,9 +44,14 @@ import java.security.PublicKey;
 public class RSACryptor extends AbstractASymmetricCryptor {
 
     @Override
-    public byte[] encrypt(PublicKey publicKey, byte[] message) {
+    public String getName() {
+        return CryptorNames.RSA;
+    }
+
+    @Override
+    public byte[] encryptIndeed(@NonNull PublicKey publicKey, @NonNull byte[] message) {
         try {
-            return RSAUtil.encryptToBytes(message, publicKey);
+            return RSAUtil.encryptToBytes(publicKey, message);
         } catch (Exception e) {
             FormattingTuple msg = MessageFormatter.format(
                 "Fail to encrypt using RSA, publicKey.len={}, message.len={}",
@@ -57,9 +63,9 @@ public class RSACryptor extends AbstractASymmetricCryptor {
     }
 
     @Override
-    public byte[] decrypt(PrivateKey privateKey, byte[] encryptedMessage) {
+    public byte[] decryptIndeed(@NonNull PrivateKey privateKey, @NonNull byte[] encryptedMessage) {
         try {
-            return RSAUtil.decryptToBytes(encryptedMessage, privateKey);
+            return RSAUtil.decryptToBytes(privateKey, encryptedMessage);
         } catch (Exception e) {
             FormattingTuple msg = MessageFormatter.format(
                 "Fail to decrypt using RSA, privateKey.len={}, encryptedMessage.len={}",

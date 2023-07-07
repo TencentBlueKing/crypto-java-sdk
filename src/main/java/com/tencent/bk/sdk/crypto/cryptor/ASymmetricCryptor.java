@@ -31,39 +31,58 @@ import java.security.PublicKey;
  * 非对称加密器接口
  */
 public interface ASymmetricCryptor {
+
+    /**
+     * 获取非对称加密器名称
+     *
+     * @return 对称加密器
+     */
+    String getName();
+
     /**
      * 加密
      *
-     * @param publicKey 公钥
-     * @param message   要加密的明文字节数组
+     * @param publicKey 公钥，不可为null
+     * @param message   要加密的明文字节数组，若为null或空值则原样返回
      * @return 加密后的密文字节数组
+     * @throws com.tencent.bk.sdk.crypto.exception.CryptoException 加解密异常
      */
     byte[] encrypt(PublicKey publicKey, byte[] message);
 
     /**
      * 解密
      *
-     * @param privateKey       私钥
-     * @param encryptedMessage 加密后的密文字节数组
+     * @param privateKey       私钥，不可为null
+     * @param encryptedMessage 加密后的密文字节数组，若为null或空值则原样返回
      * @return 解密后的明文字节数组
+     * @throws com.tencent.bk.sdk.crypto.exception.CryptoException 加解密异常
      */
     byte[] decrypt(PrivateKey privateKey, byte[] encryptedMessage);
 
     /**
+     * 获取密文字符串的元数据前缀（用于标识该密文由何种加密器加密所得）
+     *
+     * @return 密文字符串元数据前缀
+     */
+    String getStringCipherPrefix();
+
+    /**
      * 加密
      *
-     * @param publicKey 公钥
-     * @param message   要加密的明文字符串（UTF-8编码）
-     * @return 加密后的密文字节数组，经过base64编码得到的字符串
+     * @param publicKey 公钥，不可为null
+     * @param message   要加密的明文字符串（UTF-8编码），若为null或空值则原样返回
+     * @return 加密后的密文字节数组，经过base64编码并添加元数据前缀得到的字符串
+     * @throws com.tencent.bk.sdk.crypto.exception.CryptoException 加解密异常
      */
     String encrypt(PublicKey publicKey, String message);
 
     /**
      * 解密
      *
-     * @param privateKey                    私钥
-     * @param base64EncodedEncryptedMessage base64编码的【加密后的密文字节数组】
+     * @param privateKey              私钥，不可为null
+     * @param base64MessageWithPrefix 带元数据前缀的base64编码的【加密后的密文字节数组】，若为null或空值则原样返回
      * @return 解密后的明文字符串（UTF-8编码）
+     * @throws com.tencent.bk.sdk.crypto.exception.CryptoException 加解密异常
      */
-    String decrypt(PrivateKey privateKey, String base64EncodedEncryptedMessage);
+    String decrypt(PrivateKey privateKey, String base64MessageWithPrefix);
 }

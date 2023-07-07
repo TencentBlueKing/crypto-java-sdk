@@ -37,10 +37,20 @@ plugins {
     id 'signing'
 }
 
+task sourceJar(type: Jar) {
+    classifier "sources"
+    from sourceSets.main.allJava
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier "javadoc"
+    from javadoc.destinationDir
+}
+
 repositories {
     // Use jcenter for resolving dependencies.
     // You can declare any Maven/Ivy/file repository here.
-    jcenter()
+    mavenCentral()
     maven {
         url "https://oss.sonatype.org/content/repositories/snapshots"
     }
@@ -85,13 +95,14 @@ allprojects {
 }
 
 group = "com.tencent.bk.sdk"
-version = "0.0.7"
+version = "0.0.7-SNAPSHOT"
 
 publishing {
     publications {
         mavenJava(MavenPublication) {
             artifactId = 'crypto-java-sdk'
             from components.java
+
             pom {
                 name = 'crypto-java-sdk'
                 description = 'Tencent BlueKing crypto-java-sdk project'
@@ -168,3 +179,11 @@ publishing {
 signing {
     sign publishing.publications.mavenJava
 }
+
+publish.onlyIf { !sourceSets.main.allSource.files.isEmpty() }
+generateMetadataFileForMavenJavaPublication.onlyIf { !sourceSets.main.allSource.files.isEmpty() }
+generatePomFileForMavenJavaPublication.onlyIf { !sourceSets.main.allSource.files.isEmpty() }
+publishMavenJavaPublicationToMavenCentralRepository.onlyIf { !sourceSets.main.allSource.files.isEmpty() }
+publishMavenJavaPublicationToMavenLocal.onlyIf { !sourceSets.main.allSource.files.isEmpty() }
+publishToMavenLocal.onlyIf { !sourceSets.main.allSource.files.isEmpty() }
+signMavenJavaPublication.onlyIf { !sourceSets.main.allSource.files.isEmpty() }

@@ -24,28 +24,75 @@
 
 package com.tencent.bk.sdk.crypto.cryptor;
 
+import com.tencent.bk.sdk.crypto.exception.CryptoException;
 import com.tencent.bk.sdk.crypto.util.Base64Util;
+import lombok.NonNull;
+import org.apache.commons.lang3.StringUtils;
 
 import java.nio.charset.StandardCharsets;
 
 public abstract class AbstractSymmetricCryptor implements SymmetricCryptor {
 
-    public abstract byte[] encrypt(byte[] key, byte[] message);
+    public abstract byte[] encryptIndeed(@NonNull byte[] key, @NonNull byte[] message);
 
-    public abstract byte[] decrypt(byte[] key, byte[] encryptedMessage);
+    public abstract byte[] decryptIndeed(@NonNull byte[] key, @NonNull byte[] encryptedMessage);
+
+    public byte[] encrypt(byte[] key, byte[] message) {
+        if (key == null || key.length == 0) {
+            throw new CryptoException("encrypt key is invalid: null or empty");
+        }
+        if (message == null || message.length == 0) {
+            return message;
+        }
+        return encryptIndeed(key, message);
+    }
+
+    public byte[] decrypt(byte[] key, byte[] encryptedMessage) {
+        if (key == null || key.length == 0) {
+            throw new CryptoException("decrypt key is invalid: null or empty");
+        }
+        if (encryptedMessage == null || encryptedMessage.length == 0) {
+            return encryptedMessage;
+        }
+        return decryptIndeed(key, encryptedMessage);
+    }
+
+    public abstract String getName();
+
+    public String getStringCipherPrefix() {
+        return "[Cipher:::" + getName() + "]";
+    }
 
     @Override
-    public String encrypt(String key, String message) {
+    public String encrypt(String key, String message) throws CryptoException {
+        if (StringUtils.isEmpty(key)) {
+            throw new CryptoException("encrypt key is invalid: null or empty");
+        }
+        if (StringUtils.isEmpty(message)) {
+            return message;
+        }
         byte[] encryptedMessage = encrypt(
             key.getBytes(StandardCharsets.UTF_8),
             message.getBytes(StandardCharsets.UTF_8)
         );
-        return Base64Util.encodeContentToStr(encryptedMessage);
+        String finalCipher = Base64Util.encodeContentToStr(encryptedMessage);
+        String prefix = getStringCipherPrefix();
+        if (prefix != null) {
+            finalCipher = prefix + finalCipher;
+        }
+        return finalCipher;
     }
 
     @Override
-    public String decrypt(String key, String base64EncodedEncryptedMessage) {
-        byte[] rawEncryptedMessage = Base64Util.decodeContentToByte(base64EncodedEncryptedMessage);
+    public String decrypt(String key, String base64MessageWithPrefix) {
+        if (StringUtils.isEmpty(key)) {
+            throw new CryptoException("decrypt key is invalid: null or empty");
+        }
+        if (StringUtils.isEmpty(base64MessageWithPrefix)) {
+            return base64MessageWithPrefix;
+        }
+        String base64EncryptedMessage = StringUtils.removeStart(base64MessageWithPrefix, getStringCipherPrefix());
+        byte[] rawEncryptedMessage = Base64Util.decodeContentToByte(base64EncryptedMessage);
         byte[] decryptedMessage = decrypt(
             key.getBytes(StandardCharsets.UTF_8),
             rawEncryptedMessage

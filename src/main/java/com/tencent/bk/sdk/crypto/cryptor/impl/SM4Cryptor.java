@@ -29,6 +29,7 @@ import com.tencent.bk.sdk.crypto.annotation.CryptorTypeEnum;
 import com.tencent.bk.sdk.crypto.cryptor.AbstractSymmetricCryptor;
 import com.tencent.bk.sdk.crypto.cryptor.consts.CryptorNames;
 import com.tencent.bk.sdk.crypto.util.SM4Util;
+import lombok.NonNull;
 
 /**
  * 使用国密算法SM4/CTR/NoPadding的加解密实现
@@ -37,12 +38,17 @@ import com.tencent.bk.sdk.crypto.util.SM4Util;
 public class SM4Cryptor extends AbstractSymmetricCryptor {
 
     @Override
-    public byte[] encrypt(byte[] key, byte[] message) {
+    public String getName() {
+        return CryptorNames.SM4;
+    }
+
+    @Override
+    public byte[] encryptIndeed(@NonNull byte[] key, @NonNull byte[] message) {
         return SM4Util.encrypt(key, message);
     }
 
     @Override
-    public byte[] decrypt(byte[] key, byte[] encryptedMessage) {
+    public byte[] decryptIndeed(@NonNull byte[] key, @NonNull byte[] encryptedMessage) {
         return SM4Util.decrypt(key, encryptedMessage);
     }
 }

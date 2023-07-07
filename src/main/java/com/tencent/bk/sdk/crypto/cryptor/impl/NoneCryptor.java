@@ -35,6 +35,11 @@ import com.tencent.bk.sdk.crypto.cryptor.consts.CryptorNames;
 @Cryptor(name = CryptorNames.NONE)
 public class NoneCryptor implements SymmetricCryptor {
     @Override
+    public String getName() {
+        return CryptorNames.NONE;
+    }
+
+    @Override
     public byte[] encrypt(byte[] key, byte[] message) {
         return message;
     }
@@ -45,12 +50,17 @@ public class NoneCryptor implements SymmetricCryptor {
     }
 
     @Override
+    public String getStringCipherPrefix() {
+        return "";
+    }
+
+    @Override
     public String encrypt(String key, String message) {
         return message;
     }
 
     @Override
-    public String decrypt(String key, String base64EncodedEncryptedMessage) {
-        return base64EncodedEncryptedMessage;
+    public String decrypt(String key, String base64MessageWithPrefix) {
+        return base64MessageWithPrefix;
     }
 }

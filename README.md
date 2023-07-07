@@ -39,7 +39,7 @@ implementation "com.tencent.bk.sdk:crypto-java-sdk:${version}"
 
 #### 1. 引入依赖包
 Maven坐标：  
-com.tencent.bk.sdk:crypto-java-sdk:0.0.7  
+com.tencent.bk.sdk:crypto-java-sdk:${version}  
 
 
 #### 2. SDK对外提供的接口
@@ -72,7 +72,7 @@ String decryptedMessage = cryptor.decrypt(keyPair.getPrivate(), encryptedMessage
 ```
 
 #### 4. 自定义项目特有的加解密算法实现
-**对称加密（以AES为例）**    
+**对称加密（以CBC模式的AES为例）**    
 （1）编写自定义的SymmetricCryptor实现类（需要有无参数构造函数），可继承自AbstractSymmetricCryptor或实现SymmetricCryptor接口；  
 （2）为实现类添加Cryptor注解，指定名称、类型与优先级（若名称不重复可不指定），示例代码如下：
 ```java
@@ -87,17 +87,23 @@ import org.slf4j.helpers.FormattingTuple;
 import org.slf4j.helpers.MessageFormatter;
 
 /**
- * 使用AES/CBC/PKCS5Padding的加密实现
+ * 使用AES/CBC/NoPadding的加密实现
  */
-@Cryptor(name = JobCryptorNames.AES, type = CryptorTypeEnum.SYMMETRIC)
+@Cryptor(name = JobCryptorNames.AES_CBC, type = CryptorTypeEnum.SYMMETRIC)
 public class AESCryptor extends AbstractSymmetricCryptor {
+
     @Override
-    public byte[] encrypt(byte[] key, byte[] message) {
+    public String getName() {
+        return JobCryptorNames.AES_CBC;
+    }
+
+    @Override
+    public byte[] encryptIndeed(@NonNull byte[] key, @NonNull byte[] message) {
         try {
             return AESUtils.encrypt(message, key);
         } catch (Exception e) {
             FormattingTuple msg = MessageFormatter.format(
-                "Fail to encrypt using AES, key.len={}, message.len={}",
+                "Fail to encrypt using AES_CBC, key.len={}, message.len={}",
                 key.length,
                 message.length
             );
@@ -106,12 +112,12 @@ public class AESCryptor extends AbstractSymmetricCryptor {
     }
 
     @Override
-    public byte[] decrypt(byte[] key, byte[] encryptedMessage) {
+    public byte[] decryptIndeed(@NonNull byte[] key, @NonNull byte[] encryptedMessage) {
         try {
             return AESUtils.decrypt(encryptedMessage, key);
         } catch (Exception e) {
             FormattingTuple msg = MessageFormatter.format(
-                "Fail to decrypt using AES, key.len={}, encryptedMessage.len={}",
+                "Fail to decrypt using AES_CBC, key.len={}, encryptedMessage.len={}",
                 key.length,
                 encryptedMessage.length
             );
@@ -126,7 +132,7 @@ public class AESCryptor extends AbstractSymmetricCryptor {
 
 （4）使用自定义的加解密算法
 ```java
-SymmetricCryptor cryptor = SymmetricCryptorFactory.getCryptor(JobCryptorNames.AES);
+SymmetricCryptor cryptor = SymmetricCryptorFactory.getCryptor(JobCryptorNames.AES_CBC);
 String KEY = "12345678";
 String MESSAGE = "abcdefg中文";
 // 加密
@@ -136,7 +142,7 @@ String decryptedMessage = cryptor.decrypt(KEY, encryptedMessage);
 ```
 
 
-**非对称加密（以RSA为例）**    
+**非对称加密（以自定义RSA为例）**    
 （1）编写自定义的ASymmetricCryptor实现类（需要有无参数构造函数），可继承自AbstractASymmetricCryptor或实现ASymmetricCryptor接口；  
 （2）为实现类添加Cryptor注解，指定名称、类型与优先级（若名称不重复可不指定），示例代码如下：
 ```java
@@ -151,17 +157,23 @@ import org.slf4j.helpers.FormattingTuple;
 import org.slf4j.helpers.MessageFormatter;
 
 /**
- * 使用RSA的加密实现
+ * 使用自定义RSA的非对称加密实现
  */
-@Cryptor(name = JobCryptorNames.RSA, type = CryptorTypeEnum.ASYMMETRIC)
+@Cryptor(name = JobCryptorNames.RSA_CUSTOM, type = CryptorTypeEnum.ASYMMETRIC, priority = 1)
 public class RSACryptor extends AbstractASymmetricCryptor {
+
     @Override
-    public byte[] encrypt(PublicKey publicKey, byte[] message) {
+    public String getName() {
+        return JobCryptorNames.RSA_CUSTOM;
+    }
+
+    @Override
+    public byte[] encryptIndeed(@NonNull PublicKey publicKey, @NonNull byte[] message) {
         try {
-            return RSAUtils.encryptToBytes(message, publicKey);
+            return RSAUtils.encryptToBytes(publicKey, message);
         } catch (Exception e) {
             FormattingTuple msg = MessageFormatter.format(
-                "Fail to encrypt using RSA, publicKey.len={}, message.len={}",
+                "Fail to encrypt using RSA_CUSTOM, publicKey.len={}, message.len={}",
                 publicKey.getEncoded().length,
                 message.length
             );
@@ -170,12 +182,12 @@ public class RSACryptor extends AbstractASymmetricCryptor {
     }
 
     @Override
-    public byte[] decrypt(PrivateKey privateKey, byte[] encryptedMessage) {
+    public byte[] decryptIndeed(@NonNull PrivateKey privateKey, @NonNull byte[] encryptedMessage) {
         try {
-            return RSAUtils.decryptToBytes(encryptedMessage, privateKey);
+            return RSAUtils.decryptToBytes(privateKey, encryptedMessage);
         } catch (Exception e) {
             FormattingTuple msg = MessageFormatter.format(
-                "Fail to decrypt using RSA, privateKey.len={}, encryptedMessage.len={}",
+                "Fail to decrypt using RSA_CUSTOM, privateKey.len={}, encryptedMessage.len={}",
                 privateKey.getEncoded().length,
                 encryptedMessage.length
             );
@@ -190,7 +202,7 @@ public class RSACryptor extends AbstractASymmetricCryptor {
 
 （4）使用自定义的加解密算法
 ```java
-ASymmetricCryptor cryptor = ASymmetricCryptorFactory.getCryptor(JobCryptorNames.RSA);
+ASymmetricCryptor cryptor = ASymmetricCryptorFactory.getCryptor(JobCryptorNames.RSA_CUSTOM);
 
 PublicKey publicKey = RSAUtils.getPublicKey("xxx");
 PrivateKey privateKey = RSAUtils.getPrivateKey("xxx");

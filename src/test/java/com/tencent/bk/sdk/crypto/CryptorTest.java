@@ -32,6 +32,8 @@ import com.tencent.bk.sdk.crypto.cryptor.ASymmetricCryptorFactory;
 import com.tencent.bk.sdk.crypto.cryptor.SymmetricCryptor;
 import com.tencent.bk.sdk.crypto.cryptor.SymmetricCryptorFactory;
 import com.tencent.bk.sdk.crypto.cryptor.consts.CryptorNames;
+import com.tencent.bk.sdk.crypto.exception.CryptoException;
+import com.tencent.bk.sdk.crypto.util.RSAUtil;
 import com.tencent.bk.sdk.crypto.util.SM2Util;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -39,10 +41,10 @@ import org.junit.jupiter.api.Test;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 
-import static com.tencent.kona.crypto.CryptoUtils.toBytes;
 import static com.tencent.kona.crypto.CryptoUtils.toHex;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class CryptorTest {
 
@@ -53,13 +55,13 @@ class CryptorTest {
     private static ASymmetricCryptor rsaCryptor = null;
 
     private static final String EMPTY_KEY = "";
-    private static final byte[] EMPTY_KEY_BYTES = toBytes(EMPTY_KEY);
+    private static final byte[] EMPTY_KEY_BYTES = EMPTY_KEY.getBytes(StandardCharsets.UTF_8);
     private static final String EMPTY_MESSAGE = "";
     private static final byte[] EMPTY_MESSAGE_BYTES = EMPTY_MESSAGE.getBytes(StandardCharsets.UTF_8);
 
-    private static final String KEY = "12345678";
-    private static final byte[] KEY_BYTES = toBytes(KEY);
-    private static final String MESSAGE = "abcdefg中文";
+    private static final String KEY = "中文符号~!@#$%^&*();test";
+    private static final byte[] KEY_BYTES = KEY.getBytes(StandardCharsets.UTF_8);
+    private static final String MESSAGE = "test中文符号~!@#$%^&*()_+=-0987654321`[]{};:'\"<>?,./";
     private static final byte[] MESSAGE_BYTES = MESSAGE.getBytes(StandardCharsets.UTF_8);
 
     @BeforeAll
@@ -131,26 +133,19 @@ class CryptorTest {
     void testSM4Cryptor() {
         // 空值用例
         // key与message同时为空，字节数组
-        byte[] emptyEncryptedMessageBytes = sm4Cryptor.encrypt(EMPTY_KEY_BYTES, EMPTY_MESSAGE_BYTES);
-        System.out.println("emptyEncryptedMessageBytes=" + toHex(emptyEncryptedMessageBytes));
-        byte[] emptyMessageBytesByEmptyKey = sm4Cryptor.decrypt(EMPTY_KEY_BYTES, emptyEncryptedMessageBytes);
-        assertArrayEquals(EMPTY_MESSAGE_BYTES, emptyMessageBytesByEmptyKey);
+        assertThrows(CryptoException.class, () -> sm4Cryptor.encrypt(EMPTY_KEY_BYTES, EMPTY_MESSAGE_BYTES));
+        assertThrows(CryptoException.class, () -> sm4Cryptor.decrypt(EMPTY_KEY_BYTES, EMPTY_MESSAGE_BYTES));
+
         // key与message同时为空，字符串
-        String emptyEncryptedMessage = sm4Cryptor.encrypt(EMPTY_KEY, EMPTY_MESSAGE);
-        System.out.println("emptyEncryptedMessage=" + emptyEncryptedMessage);
-        String emptyMessageByEmptyKey = sm4Cryptor.decrypt(EMPTY_KEY, emptyEncryptedMessage);
-        assertEquals(EMPTY_MESSAGE, emptyMessageByEmptyKey);
+        assertThrows(CryptoException.class, () -> sm4Cryptor.encrypt(EMPTY_KEY, EMPTY_MESSAGE));
+        assertThrows(CryptoException.class, () -> sm4Cryptor.decrypt(EMPTY_KEY, EMPTY_MESSAGE));
 
         // key为空，message不为空，字节数组
-        byte[] emptyKeyEncryptedMessageBytes = sm4Cryptor.encrypt(EMPTY_KEY_BYTES, MESSAGE_BYTES);
-        System.out.println("emptyKeyEncryptedMessageBytes=" + toHex(emptyKeyEncryptedMessageBytes));
-        byte[] messageBytesByEmptyKey = sm4Cryptor.decrypt(EMPTY_KEY_BYTES, emptyKeyEncryptedMessageBytes);
-        assertArrayEquals(MESSAGE_BYTES, messageBytesByEmptyKey);
+        assertThrows(CryptoException.class, () -> sm4Cryptor.encrypt(EMPTY_KEY_BYTES, MESSAGE_BYTES));
+        assertThrows(CryptoException.class, () -> sm4Cryptor.decrypt(EMPTY_KEY_BYTES, MESSAGE_BYTES));
         // key为空，message不为空，字符串
-        String emptyKeyEncryptedMessage = sm4Cryptor.encrypt(EMPTY_KEY, MESSAGE);
-        System.out.println("emptyKeyEncryptedMessage=" + emptyKeyEncryptedMessage);
-        String messageByEmptyKey = sm4Cryptor.decrypt(EMPTY_KEY, emptyKeyEncryptedMessage);
-        assertEquals(MESSAGE, messageByEmptyKey);
+        assertThrows(CryptoException.class, () -> sm4Cryptor.encrypt(EMPTY_KEY, MESSAGE));
+        assertThrows(CryptoException.class, () -> sm4Cryptor.decrypt(EMPTY_KEY, MESSAGE));
 
         // key不为空，message为空，字节数组
         byte[] emptyMessageEncryptedMessageBytes = sm4Cryptor.encrypt(KEY_BYTES, EMPTY_MESSAGE_BYTES);
@@ -179,26 +174,18 @@ class CryptorTest {
     void testAESCryptor() {
         // 空值用例
         // key与message同时为空，字节数组
-        byte[] emptyEncryptedMessageBytes = aesCryptor.encrypt(EMPTY_KEY_BYTES, EMPTY_MESSAGE_BYTES);
-        System.out.println("emptyEncryptedMessageBytes=" + toHex(emptyEncryptedMessageBytes));
-        byte[] emptyMessageBytesByEmptyKey = aesCryptor.decrypt(EMPTY_KEY_BYTES, emptyEncryptedMessageBytes);
-        assertArrayEquals(EMPTY_MESSAGE_BYTES, emptyMessageBytesByEmptyKey);
+        assertThrows(CryptoException.class, () -> aesCryptor.encrypt(EMPTY_KEY_BYTES, EMPTY_MESSAGE_BYTES));
+        assertThrows(CryptoException.class, () -> aesCryptor.decrypt(EMPTY_KEY_BYTES, EMPTY_MESSAGE_BYTES));
         // key与message同时为空，字符串
-        String emptyEncryptedMessage = aesCryptor.encrypt(EMPTY_KEY, EMPTY_MESSAGE);
-        System.out.println("emptyEncryptedMessage=" + emptyEncryptedMessage);
-        String emptyMessageByEmptyKey = aesCryptor.decrypt(EMPTY_KEY, emptyEncryptedMessage);
-        assertEquals(EMPTY_MESSAGE, emptyMessageByEmptyKey);
+        assertThrows(CryptoException.class, () -> aesCryptor.encrypt(EMPTY_KEY, EMPTY_MESSAGE));
+        assertThrows(CryptoException.class, () -> aesCryptor.decrypt(EMPTY_KEY, EMPTY_MESSAGE));
 
         // key为空，message不为空，字节数组
-        byte[] emptyKeyEncryptedMessageBytes = aesCryptor.encrypt(EMPTY_KEY_BYTES, MESSAGE_BYTES);
-        System.out.println("emptyKeyEncryptedMessageBytes=" + toHex(emptyKeyEncryptedMessageBytes));
-        byte[] messageBytesByEmptyKey = aesCryptor.decrypt(EMPTY_KEY_BYTES, emptyKeyEncryptedMessageBytes);
-        assertArrayEquals(MESSAGE_BYTES, messageBytesByEmptyKey);
+        assertThrows(CryptoException.class, () -> aesCryptor.encrypt(EMPTY_KEY_BYTES, MESSAGE_BYTES));
+        assertThrows(CryptoException.class, () -> aesCryptor.decrypt(EMPTY_KEY_BYTES, MESSAGE_BYTES));
         // key为空，message不为空，字符串
-        String emptyKeyEncryptedMessage = aesCryptor.encrypt(EMPTY_KEY, MESSAGE);
-        System.out.println("emptyKeyEncryptedMessage=" + emptyKeyEncryptedMessage);
-        String messageByEmptyKey = aesCryptor.decrypt(EMPTY_KEY, emptyKeyEncryptedMessage);
-        assertEquals(MESSAGE, messageByEmptyKey);
+        assertThrows(CryptoException.class, () -> aesCryptor.encrypt(EMPTY_KEY, MESSAGE));
+        assertThrows(CryptoException.class, () -> aesCryptor.decrypt(EMPTY_KEY, MESSAGE));
 
         // key不为空，message为空，字节数组
         byte[] emptyMessageEncryptedMessageBytes = aesCryptor.encrypt(KEY_BYTES, EMPTY_MESSAGE_BYTES);
@@ -234,7 +221,26 @@ class CryptorTest {
 
         // 字符串
         String encryptedMessageStr = sm2Cryptor.encrypt(keyPair.getPublic(), MESSAGE);
+        System.out.println("encryptedMessageStr=" + encryptedMessageStr);
         String decryptedMessageStr = sm2Cryptor.decrypt(keyPair.getPrivate(), encryptedMessageStr);
+        System.out.println("decryptedMessageStr=" + decryptedMessageStr);
+        assertEquals(MESSAGE, decryptedMessageStr);
+    }
+
+    @Test
+    void testRSACryptor() {
+        KeyPair keyPair = RSAUtil.genKeyPair();
+        // 仅支持非空message
+        // 字节数组
+        byte[] encryptedMessageBytes = rsaCryptor.encrypt(keyPair.getPublic(), MESSAGE_BYTES);
+        byte[] decryptedMessageBytes = rsaCryptor.decrypt(keyPair.getPrivate(), encryptedMessageBytes);
+        assertArrayEquals(MESSAGE_BYTES, decryptedMessageBytes);
+
+        // 字符串
+        String encryptedMessageStr = rsaCryptor.encrypt(keyPair.getPublic(), MESSAGE);
+        System.out.println("encryptedMessageStr=" + encryptedMessageStr);
+        String decryptedMessageStr = rsaCryptor.decrypt(keyPair.getPrivate(), encryptedMessageStr);
+        System.out.println("decryptedMessageStr=" + decryptedMessageStr);
         assertEquals(MESSAGE, decryptedMessageStr);
     }
 

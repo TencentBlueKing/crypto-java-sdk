@@ -24,18 +24,19 @@
 
 package com.tencent.bk.sdk.crypto.util;
 
+import com.tencent.bk.sdk.crypto.exception.CryptoException;
+
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.SecureRandom;
 
+/**
+ * 对称加密算法AES相关操作工具类
+ */
 public class AESUtil {
     /**
      * 加密/解密算法/工作模式/填充方式
@@ -45,44 +46,17 @@ public class AESUtil {
     /**
      * 加密数据
      *
-     * @param data     待加密数据
-     * @param password 密钥
-     * @return byte[] 加密后的数据
-     */
-    public static byte[] encrypt(byte[] data, String password) throws Exception {
-        return encrypt(data, password.getBytes(StandardCharsets.UTF_8));
-    }
-
-    /**
-     * 加密数据
-     *
-     * @param data     待加密数据
-     * @param password 密钥
-     * @return byte[] 加密后的数据
-     */
-    public static byte[] encrypt(String data, String password) throws Exception {
-        return encrypt(data.getBytes(StandardCharsets.UTF_8), password.getBytes(StandardCharsets.UTF_8));
-    }
-
-    /**
-     * 解密数据
-     *
-     * @param data     待解密数据
-     * @param password 密钥
-     * @return byte[] 解密后的数据
-     */
-    public static byte[] decrypt(byte[] data, String password) throws Exception {
-        return decrypt(data, password.getBytes(StandardCharsets.UTF_8));
-    }
-
-    /**
-     * 加密数据
-     *
      * @param data 待加密数据
      * @param key  密钥
      * @return byte[] 加密后的数据
      */
     public static byte[] encrypt(byte[] data, byte[] key) throws Exception {
+        if (data == null || data.length == 0) {
+            return data;
+        }
+        if (key == null || key.length == 0) {
+            throw new CryptoException("encrypt key is invalid: null or empty");
+        }
         Cipher cipher = Cipher.getInstance(CIPHER_ALGORITHM);
         cipher.init(Cipher.ENCRYPT_MODE, getKeySpec(cipher, key));
 
@@ -105,6 +79,12 @@ public class AESUtil {
      * @return byte[] 解密后的数据
      */
     public static byte[] decrypt(byte[] data, byte[] key) throws Exception {
+        if (data == null || data.length == 0) {
+            return data;
+        }
+        if (key == null || key.length == 0) {
+            throw new CryptoException("decrypt key is invalid: null or empty");
+        }
         Cipher cipher = Cipher.getInstance(CIPHER_ALGORITHM);
         cipher.init(Cipher.DECRYPT_MODE, getKeySpec(cipher, key), getIvSpec(cipher, data));
         byte[] dataWithoutIv = new byte[data.length - cipher.getBlockSize()];
@@ -126,47 +106,5 @@ public class AESUtil {
         random.setSeed(key);
         kgen.init(cipher.getBlockSize() * 8, random);
         return new SecretKeySpec(kgen.generateKey().getEncoded(), "AES");
-    }
-
-    public static void encrypt(File inFile, File outFile, String password) throws Exception {
-        byte[] key = password.getBytes(StandardCharsets.UTF_8);
-        Cipher cipher = Cipher.getInstance(CIPHER_ALGORITHM);
-        cipher.init(Cipher.ENCRYPT_MODE, getKeySpec(cipher, key));
-        try (FileInputStream in = new FileInputStream(inFile); FileOutputStream out = new FileOutputStream(outFile)) {
-            byte[] arr = cipher.getIV();
-            if (arr == null) {
-                throw new RuntimeException(String.format("CIPHER_ALGORITHM %s is invalid", CIPHER_ALGORITHM));
-            }
-            out.write(arr);
-            write(in, out, cipher);
-        }
-    }
-
-    public static void decrypt(File inFile, File outFile, String password) throws Exception {
-        byte[] key = password.getBytes(StandardCharsets.UTF_8);
-        Cipher cipher = Cipher.getInstance(CIPHER_ALGORITHM);
-        try (FileInputStream in = new FileInputStream(inFile); FileOutputStream out = new FileOutputStream(outFile)) {
-            byte[] iv = new byte[cipher.getBlockSize()];
-            if (in.read(iv) < iv.length) {
-                throw new RuntimeException();
-            }
-            cipher.init(Cipher.DECRYPT_MODE, getKeySpec(cipher, key), new IvParameterSpec(iv));
-            write(in, out, cipher);
-        }
-    }
-
-    private static void write(FileInputStream in, FileOutputStream out, Cipher cipher) throws Exception {
-        byte[] iBuffer = new byte[1024];
-        int len;
-        while ((len = in.read(iBuffer)) != -1) {
-            byte[] oBuffer = cipher.update(iBuffer, 0, len);
-            if (oBuffer != null) {
-                out.write(oBuffer);
-            }
-        }
-        byte[] oBuffer = cipher.doFinal();
-        if (oBuffer != null) {
-            out.write(oBuffer);
-        }
     }
 }

@@ -29,6 +29,7 @@ import com.tencent.bk.sdk.crypto.annotation.CryptorTypeEnum;
 import com.tencent.bk.sdk.crypto.cryptor.AbstractASymmetricCryptor;
 import com.tencent.bk.sdk.crypto.cryptor.consts.CryptorNames;
 import com.tencent.bk.sdk.crypto.util.SM2Util;
+import lombok.NonNull;
 
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -40,12 +41,17 @@ import java.security.PublicKey;
 public class SM2Cryptor extends AbstractASymmetricCryptor {
 
     @Override
-    public byte[] encrypt(PublicKey publicKey, byte[] message) {
+    public String getName() {
+        return CryptorNames.SM2;
+    }
+
+    @Override
+    public byte[] encryptIndeed(@NonNull PublicKey publicKey, @NonNull byte[] message) {
         return SM2Util.encrypt(publicKey, message);
     }
 
     @Override
-    public byte[] decrypt(PrivateKey privateKey, byte[] encryptedMessage) {
+    public byte[] decryptIndeed(@NonNull PrivateKey privateKey, @NonNull byte[] encryptedMessage) {
         return SM2Util.decrypt(privateKey, encryptedMessage);
     }
 }

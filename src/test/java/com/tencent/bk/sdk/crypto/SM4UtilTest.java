@@ -32,18 +32,17 @@ import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
 
-import static com.tencent.kona.crypto.CryptoUtils.toBytes;
 import static com.tencent.kona.crypto.CryptoUtils.toHex;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 class SM4UtilTest {
 
-    private static final byte[] EMPTY_KEY = toBytes("");
+    private static final byte[] EMPTY_KEY = "".getBytes(StandardCharsets.UTF_8);
     private static final byte[] EMPTY_MESSAGE = "".getBytes(StandardCharsets.UTF_8);
 
-    private static final byte[] KEY = toBytes("12345678");
-    private static final byte[] MESSAGE = "abcdefg中文".getBytes(StandardCharsets.UTF_8);
-
+    private static final byte[] KEY = "中文符号~!@#$%^&*();test".getBytes(StandardCharsets.UTF_8);
+    private static final byte[] MESSAGE = "test中文符号~!@#$%^&*()_+=-0987654321`[]{};:'\"<>?,./"
+        .getBytes(StandardCharsets.UTF_8);
 
     @Test
     void testEncrypt() {

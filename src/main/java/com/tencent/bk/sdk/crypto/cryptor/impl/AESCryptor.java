@@ -30,6 +30,7 @@ import com.tencent.bk.sdk.crypto.cryptor.AbstractSymmetricCryptor;
 import com.tencent.bk.sdk.crypto.cryptor.consts.CryptorNames;
 import com.tencent.bk.sdk.crypto.exception.CryptoException;
 import com.tencent.bk.sdk.crypto.util.AESUtil;
+import lombok.NonNull;
 import org.slf4j.helpers.FormattingTuple;
 import org.slf4j.helpers.MessageFormatter;
 
@@ -38,8 +39,14 @@ import org.slf4j.helpers.MessageFormatter;
  */
 @Cryptor(name = CryptorNames.AES, type = CryptorTypeEnum.SYMMETRIC)
 public class AESCryptor extends AbstractSymmetricCryptor {
+
     @Override
-    public byte[] encrypt(byte[] key, byte[] message) {
+    public String getName() {
+        return CryptorNames.AES;
+    }
+
+    @Override
+    public byte[] encryptIndeed(@NonNull byte[] key, @NonNull byte[] message) {
         try {
             return AESUtil.encrypt(message, key);
         } catch (Exception e) {
@@ -53,7 +60,7 @@ public class AESCryptor extends AbstractSymmetricCryptor {
     }
 
     @Override
-    public byte[] decrypt(byte[] key, byte[] encryptedMessage) {
+    public byte[] decryptIndeed(@NonNull byte[] key, @NonNull byte[] encryptedMessage) {
         try {
             return AESUtil.decrypt(encryptedMessage, key);
         } catch (Exception e) {

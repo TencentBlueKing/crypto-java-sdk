@@ -27,9 +27,8 @@
  */
 package com.tencent.bk.sdk.crypto;
 
-import com.tencent.bk.sdk.crypto.exception.SM2DecryptException;
-import com.tencent.bk.sdk.crypto.exception.SM2EncryptException;
-import com.tencent.bk.sdk.crypto.util.SM2Util;
+import com.tencent.bk.sdk.crypto.exception.CryptoException;
+import com.tencent.bk.sdk.crypto.util.RSAUtil;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -41,7 +40,7 @@ import java.security.PublicKey;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class SM2UtilTest {
+class RSAUtilTest {
 
     private static PrivateKey privateKey = null;
     private static PublicKey publicKey = null;
@@ -53,7 +52,7 @@ class SM2UtilTest {
 
     @BeforeAll
     static void setup() {
-        KeyPair keyPair = SM2Util.genKeyPair();
+        KeyPair keyPair = RSAUtil.genKeyPair();
         privateKey = keyPair.getPrivate();
         publicKey = keyPair.getPublic();
     }
@@ -62,21 +61,14 @@ class SM2UtilTest {
     void testEncryptAndDecrypt() {
         // 空值用例
         // key不为空，message为空
-        assertThrows(SM2EncryptException.class, () -> SM2Util.encrypt(publicKey.getEncoded(), EMPTY_MESSAGE));
-        assertThrows(SM2DecryptException.class, () -> SM2Util.decrypt(privateKey.getEncoded(), EMPTY_MESSAGE));
+        assertThrows(CryptoException.class, () -> RSAUtil.encryptToBytes(publicKey, EMPTY_MESSAGE));
+        assertThrows(CryptoException.class, () -> RSAUtil.decryptToBytes(privateKey, EMPTY_MESSAGE));
 
         // 使用JDK通用接口PublicKey、PrivateKey加解密
         // 一般用例：加密
-        byte[] realCipheredMessage = SM2Util.encrypt(publicKey, MESSAGE);
+        byte[] realCipheredMessage = RSAUtil.encryptToBytes(publicKey, MESSAGE);
         // 一般用例：解密
-        byte[] normalMessage = SM2Util.decrypt(privateKey, realCipheredMessage);
-        assertArrayEquals(normalMessage, MESSAGE);
-
-        // 使用编码为字节数组后的PublicKey、PrivateKey加解密
-        // 一般用例：加密
-        realCipheredMessage = SM2Util.encrypt(publicKey.getEncoded(), MESSAGE);
-        // 一般用例：解密
-        normalMessage = SM2Util.decrypt(privateKey.getEncoded(), realCipheredMessage);
+        byte[] normalMessage = RSAUtil.decryptToBytes(privateKey, realCipheredMessage);
         assertArrayEquals(normalMessage, MESSAGE);
     }
 

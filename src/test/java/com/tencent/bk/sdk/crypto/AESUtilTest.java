@@ -27,57 +27,49 @@
  */
 package com.tencent.bk.sdk.crypto;
 
-import com.tencent.bk.sdk.crypto.exception.SM2DecryptException;
-import com.tencent.bk.sdk.crypto.exception.SM2EncryptException;
-import com.tencent.bk.sdk.crypto.util.SM2Util;
-import org.junit.jupiter.api.BeforeAll;
+import com.tencent.bk.sdk.crypto.exception.CryptoException;
+import com.tencent.bk.sdk.crypto.util.AESUtil;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
-import java.security.KeyPair;
-import java.security.PrivateKey;
-import java.security.PublicKey;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class SM2UtilTest {
+class AESUtilTest {
 
-    private static PrivateKey privateKey = null;
-    private static PublicKey publicKey = null;
-
-    private static final byte[] EMPTY_MESSAGE = "".getBytes(StandardCharsets.UTF_8);
-
-    private static final byte[] MESSAGE = "test中文符号~!@#$%^&*()_+=-0987654321`[]{};:'\"<>?,./"
+    private static final byte[] EMPTY_MESSAGE_BYTES = "".getBytes(StandardCharsets.UTF_8);
+    private static final byte[] MESSAGE_BYTES = "test中文符号~!@#$%^&*()_+=-0987654321`[]{};:'\"<>?,./"
         .getBytes(StandardCharsets.UTF_8);
+    private static final byte[] EMPTY_KEY_BYTES = "".getBytes(StandardCharsets.UTF_8);
+    private static final byte[] KEY_BYTES = "中文符号~!@#$%^&*()test".getBytes(StandardCharsets.UTF_8);
 
-    @BeforeAll
-    static void setup() {
-        KeyPair keyPair = SM2Util.genKeyPair();
-        privateKey = keyPair.getPrivate();
-        publicKey = keyPair.getPublic();
-    }
-
+    @SuppressWarnings("ConstantConditions")
     @Test
-    void testEncryptAndDecrypt() {
-        // 空值用例
-        // key不为空，message为空
-        assertThrows(SM2EncryptException.class, () -> SM2Util.encrypt(publicKey.getEncoded(), EMPTY_MESSAGE));
-        assertThrows(SM2DecryptException.class, () -> SM2Util.decrypt(privateKey.getEncoded(), EMPTY_MESSAGE));
+    void testEncryptAndDecrypt() throws Exception {
+        // null message用例
+        byte[] encryptedData = AESUtil.encrypt(null, KEY_BYTES);
+        byte[] decryptedData = AESUtil.decrypt(encryptedData, KEY_BYTES);
+        assertArrayEquals(null, decryptedData);
 
-        // 使用JDK通用接口PublicKey、PrivateKey加解密
-        // 一般用例：加密
-        byte[] realCipheredMessage = SM2Util.encrypt(publicKey, MESSAGE);
-        // 一般用例：解密
-        byte[] normalMessage = SM2Util.decrypt(privateKey, realCipheredMessage);
-        assertArrayEquals(normalMessage, MESSAGE);
+        // empty message用例
+        encryptedData = AESUtil.encrypt(EMPTY_MESSAGE_BYTES, KEY_BYTES);
+        decryptedData = AESUtil.decrypt(encryptedData, KEY_BYTES);
+        assertArrayEquals(EMPTY_MESSAGE_BYTES, decryptedData);
 
-        // 使用编码为字节数组后的PublicKey、PrivateKey加解密
-        // 一般用例：加密
-        realCipheredMessage = SM2Util.encrypt(publicKey.getEncoded(), MESSAGE);
-        // 一般用例：解密
-        normalMessage = SM2Util.decrypt(privateKey.getEncoded(), realCipheredMessage);
-        assertArrayEquals(normalMessage, MESSAGE);
+        // 常规用例
+        encryptedData = AESUtil.encrypt(MESSAGE_BYTES, KEY_BYTES);
+        decryptedData = AESUtil.decrypt(encryptedData, KEY_BYTES);
+        assertArrayEquals(MESSAGE_BYTES, decryptedData);
+
+        // null key用例
+        final byte[] finalEncryptedData = encryptedData.clone();
+        assertThrows(CryptoException.class, () -> AESUtil.encrypt(MESSAGE_BYTES, null));
+        assertThrows(CryptoException.class, () -> AESUtil.decrypt(finalEncryptedData, null));
+
+        // empty key用例
+        assertThrows(CryptoException.class, () -> AESUtil.encrypt(MESSAGE_BYTES, EMPTY_KEY_BYTES));
+        assertThrows(CryptoException.class, () -> AESUtil.decrypt(finalEncryptedData, EMPTY_KEY_BYTES));
     }
 
 }
