@@ -26,16 +26,53 @@ package com.tencent.bk.sdk.crypto.cryptor;
 
 import com.tencent.bk.sdk.crypto.exception.CryptoException;
 import com.tencent.bk.sdk.crypto.util.Base64Util;
+import com.tencent.kona.crypto.CryptoUtils;
 import lombok.NonNull;
 import org.apache.commons.lang3.StringUtils;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 public abstract class AbstractSymmetricCryptor implements SymmetricCryptor {
 
     public abstract byte[] encryptIndeed(@NonNull byte[] key, @NonNull byte[] message);
 
     public abstract byte[] decryptIndeed(@NonNull byte[] key, @NonNull byte[] encryptedMessage);
+
+    /**
+     * 对流数据进行加密
+     *
+     * @param key 密钥
+     * @param in  明文输入流
+     * @param out 密文输出流
+     */
+    public void encryptIndeed(String key, InputStream in, OutputStream out) {
+        throw new CryptoException(
+            "Stream data encrypt not implemented, " +
+                "please override method: com.tencent.bk.sdk.crypto.cryptor.AbstractSymmetricCryptor" +
+                ".encryptIndeed(String key, InputStream in, OutputStream out) " +
+                "in custom cryptor: " + getName()
+        );
+    }
+
+    /**
+     * 对流数据进行解密
+     *
+     * @param key 密钥
+     * @param in  密文输入流
+     * @param out 明文输出流
+     */
+    public void decryptIndeed(String key, InputStream in, OutputStream out) {
+        throw new CryptoException(
+            "Stream data decrypt not implemented, " +
+                "please override method: com.tencent.bk.sdk.crypto.cryptor.AbstractSymmetricCryptor" +
+                ".decryptIndeed(String key, InputStream in, OutputStream out) " +
+                "in custom cryptor: " + getName()
+        );
+    }
 
     public byte[] encrypt(byte[] key, byte[] message) {
         if (key == null || key.length == 0) {
@@ -44,7 +81,12 @@ public abstract class AbstractSymmetricCryptor implements SymmetricCryptor {
         if (message == null || message.length == 0) {
             return message;
         }
-        return encryptIndeed(key, message);
+        byte[] encryptedBytes = encryptIndeed(key, message);
+        byte[] prefixBytes = getStringCipherPrefix().getBytes(StandardCharsets.UTF_8);
+        byte[] finalBytes = new byte[encryptedBytes.length + prefixBytes.length];
+        System.arraycopy(prefixBytes, 0, finalBytes, 0, prefixBytes.length);
+        System.arraycopy(encryptedBytes, 0, finalBytes, prefixBytes.length, encryptedBytes.length);
+        return finalBytes;
     }
 
     public byte[] decrypt(byte[] key, byte[] encryptedMessage) {
@@ -54,13 +96,50 @@ public abstract class AbstractSymmetricCryptor implements SymmetricCryptor {
         if (encryptedMessage == null || encryptedMessage.length == 0) {
             return encryptedMessage;
         }
-        return decryptIndeed(key, encryptedMessage);
+        byte[] expectedPrefixBytes = getStringCipherPrefix().getBytes(StandardCharsets.UTF_8);
+        if (encryptedMessage.length < expectedPrefixBytes.length) {
+            throw new CryptoException("encryptedMessage is invalid: cannot find enough prefix bytes");
+        }
+        byte[] prefixBytes = new byte[expectedPrefixBytes.length];
+        System.arraycopy(encryptedMessage, 0, prefixBytes, 0, prefixBytes.length);
+        if (!Arrays.equals(prefixBytes, expectedPrefixBytes)) {
+            throw new CryptoException(
+                "encryptedMessage is invalid: prefix bytes unexpected, whose hex should be: " +
+                    CryptoUtils.toHex(expectedPrefixBytes)
+            );
+        }
+        byte[] pureEncryptedBytes = new byte[encryptedMessage.length - prefixBytes.length];
+        System.arraycopy(encryptedMessage, prefixBytes.length, pureEncryptedBytes, 0, pureEncryptedBytes.length);
+        return decryptIndeed(key, pureEncryptedBytes);
+    }
+
+    public void encrypt(String key, InputStream in, OutputStream out) {
+        byte[] prefixBytes = getStringCipherPrefix().getBytes(StandardCharsets.UTF_8);
+        try {
+            out.write(prefixBytes);
+            encryptIndeed(key, in, out);
+        } catch (IOException e) {
+            throw new CryptoException("Fail to encrypt data in stream", e);
+        }
+    }
+
+    public void decrypt(String key, InputStream in, OutputStream out) {
+        byte[] prefixBytes = getStringCipherPrefix().getBytes(StandardCharsets.UTF_8);
+        byte[] cipherPrefixBytes = new byte[prefixBytes.length];
+        try {
+            int n = in.read(cipherPrefixBytes);
+            assert n == prefixBytes.length;
+            assert Arrays.equals(prefixBytes, cipherPrefixBytes);
+            decryptIndeed(key, in, out);
+        } catch (IOException e) {
+            throw new CryptoException("Fail to decrypt data in stream", e);
+        }
     }
 
     public abstract String getName();
 
     public String getStringCipherPrefix() {
-        return "[Cipher:::" + getName() + "]";
+        return CryptorMetaDefinition.getCipherMetaPrefix() + getName() + CryptorMetaDefinition.getCipherMetaSuffix();
     }
 
     @Override
@@ -71,7 +150,7 @@ public abstract class AbstractSymmetricCryptor implements SymmetricCryptor {
         if (StringUtils.isEmpty(message)) {
             return message;
         }
-        byte[] encryptedMessage = encrypt(
+        byte[] encryptedMessage = encryptIndeed(
             key.getBytes(StandardCharsets.UTF_8),
             message.getBytes(StandardCharsets.UTF_8)
         );
@@ -93,7 +172,7 @@ public abstract class AbstractSymmetricCryptor implements SymmetricCryptor {
         }
         String base64EncryptedMessage = StringUtils.removeStart(base64MessageWithPrefix, getStringCipherPrefix());
         byte[] rawEncryptedMessage = Base64Util.decodeContentToByte(base64EncryptedMessage);
-        byte[] decryptedMessage = decrypt(
+        byte[] decryptedMessage = decryptIndeed(
             key.getBytes(StandardCharsets.UTF_8),
             rawEncryptedMessage
         );

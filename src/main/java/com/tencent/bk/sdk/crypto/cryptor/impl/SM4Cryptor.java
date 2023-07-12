@@ -28,8 +28,14 @@ import com.tencent.bk.sdk.crypto.annotation.Cryptor;
 import com.tencent.bk.sdk.crypto.annotation.CryptorTypeEnum;
 import com.tencent.bk.sdk.crypto.cryptor.AbstractSymmetricCryptor;
 import com.tencent.bk.sdk.crypto.cryptor.consts.CryptorNames;
+import com.tencent.bk.sdk.crypto.exception.CryptoException;
 import com.tencent.bk.sdk.crypto.util.SM4Util;
 import lombok.NonNull;
+import org.slf4j.helpers.FormattingTuple;
+import org.slf4j.helpers.MessageFormatter;
+
+import java.io.InputStream;
+import java.io.OutputStream;
 
 /**
  * 使用国密算法SM4/CTR/NoPadding的加解密实现
@@ -50,5 +56,31 @@ public class SM4Cryptor extends AbstractSymmetricCryptor {
     @Override
     public byte[] decryptIndeed(@NonNull byte[] key, @NonNull byte[] encryptedMessage) {
         return SM4Util.decrypt(key, encryptedMessage);
+    }
+
+    @Override
+    public void encryptIndeed(String key, InputStream in, OutputStream out) {
+        try {
+            SM4Util.encrypt(key, in, out);
+        } catch (Exception e) {
+            FormattingTuple msg = MessageFormatter.format(
+                "Fail to encrypt using SM4, key.len={}",
+                key.length()
+            );
+            throw new CryptoException(msg.getMessage(), e);
+        }
+    }
+
+    @Override
+    public void decryptIndeed(String key, InputStream in, OutputStream out) {
+        try {
+            SM4Util.decrypt(key, in, out);
+        } catch (Exception e) {
+            FormattingTuple msg = MessageFormatter.format(
+                "Fail to decrypt using SM4, key.len={}",
+                key.length()
+            );
+            throw new CryptoException(msg.getMessage(), e);
+        }
     }
 }

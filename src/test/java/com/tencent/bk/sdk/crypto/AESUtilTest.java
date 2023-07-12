@@ -29,20 +29,27 @@ package com.tencent.bk.sdk.crypto;
 
 import com.tencent.bk.sdk.crypto.exception.CryptoException;
 import com.tencent.bk.sdk.crypto.util.AESUtil;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.junit.jupiter.api.Test;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class AESUtilTest {
 
     private static final byte[] EMPTY_MESSAGE_BYTES = "".getBytes(StandardCharsets.UTF_8);
-    private static final byte[] MESSAGE_BYTES = "test中文符号~!@#$%^&*()_+=-0987654321`[]{};:'\"<>?,./"
-        .getBytes(StandardCharsets.UTF_8);
+    private static final String MESSAGE = "test中文符号~!@#$%^&*()_+=-0987654321`[]{};:'\"<>?,./";
+    private static final byte[] MESSAGE_BYTES = MESSAGE.getBytes(StandardCharsets.UTF_8);
     private static final byte[] EMPTY_KEY_BYTES = "".getBytes(StandardCharsets.UTF_8);
-    private static final byte[] KEY_BYTES = "中文符号~!@#$%^&*()test".getBytes(StandardCharsets.UTF_8);
+    private static final String KEY = "中文符号~!@#$%^&*()test";
+    private static final byte[] KEY_BYTES = KEY.getBytes(StandardCharsets.UTF_8);
 
     @SuppressWarnings("ConstantConditions")
     @Test
@@ -72,4 +79,33 @@ class AESUtilTest {
         assertThrows(CryptoException.class, () -> AESUtil.decrypt(finalEncryptedData, EMPTY_KEY_BYTES));
     }
 
+    @Test
+    void testEncryptAndDecryptStream() throws Exception {
+        // 加密
+        InputStream in = AESUtilTest.class.getClassLoader().getResourceAsStream("fileToEncrypt.txt");
+        String outFilePath = new File("").getAbsolutePath() + "/out/encryptedFile.encrypt";
+        FileOutputStream out = new FileOutputStream(outFilePath);
+        AESUtil.encrypt(KEY, in, out);
+        if (in != null) {
+            in.close();
+        }
+        out.close();
+        // 解密
+        String inFilePath = new File("").getAbsolutePath() + "/out/encryptedFile.encrypt";
+        in = new FileInputStream(inFilePath);
+        String decryptedFilePath = new File("").getAbsolutePath() + "/out/decryptedFile.txt";
+        out = new FileOutputStream(decryptedFilePath);
+        AESUtil.decrypt(KEY, in, out);
+        in.close();
+        out.close();
+        // 验证
+        in = AESUtilTest.class.getClassLoader().getResourceAsStream("fileToEncrypt.txt");
+        assert in != null;
+        String srcFileMd5 = DigestUtils.md5Hex(in);
+        FileInputStream fis = new FileInputStream(decryptedFilePath);
+        String decryptedFileMd5 = DigestUtils.md5Hex(fis);
+        assertEquals(srcFileMd5, decryptedFileMd5);
+        in.close();
+        fis.close();
+    }
 }

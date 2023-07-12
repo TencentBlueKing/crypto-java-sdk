@@ -34,6 +34,9 @@ import lombok.NonNull;
 import org.slf4j.helpers.FormattingTuple;
 import org.slf4j.helpers.MessageFormatter;
 
+import java.io.InputStream;
+import java.io.OutputStream;
+
 /**
  * 使用AES/CTR/NoPadding的加密实现
  */
@@ -68,6 +71,32 @@ public class AESCryptor extends AbstractSymmetricCryptor {
                 "Fail to decrypt using AES, key.len={}, encryptedMessage.len={}",
                 key.length,
                 encryptedMessage.length
+            );
+            throw new CryptoException(msg.getMessage(), e);
+        }
+    }
+
+    @Override
+    public void encryptIndeed(String key, InputStream in, OutputStream out) {
+        try {
+            AESUtil.encrypt(key, in, out);
+        } catch (Exception e) {
+            FormattingTuple msg = MessageFormatter.format(
+                "Fail to encrypt using AES, key.len={}",
+                key.length()
+            );
+            throw new CryptoException(msg.getMessage(), e);
+        }
+    }
+
+    @Override
+    public void decryptIndeed(String key, InputStream in, OutputStream out) {
+        try {
+            AESUtil.decrypt(key, in, out);
+        } catch (Exception e) {
+            FormattingTuple msg = MessageFormatter.format(
+                "Fail to decrypt using AES, key.len={}",
+                key.length()
             );
             throw new CryptoException(msg.getMessage(), e);
         }

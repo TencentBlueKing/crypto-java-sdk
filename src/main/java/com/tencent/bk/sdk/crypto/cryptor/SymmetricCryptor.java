@@ -24,6 +24,9 @@
 
 package com.tencent.bk.sdk.crypto.cryptor;
 
+import java.io.InputStream;
+import java.io.OutputStream;
+
 /**
  * 对称加密器接口
  */
@@ -41,7 +44,7 @@ public interface SymmetricCryptor {
      *
      * @param key     密钥字节数组，不可为null或空值
      * @param message 要加密的明文字节数组，若为null或空值则原样返回
-     * @return 加密后的密文字节数组
+     * @return 含元数据前缀的加密后的密文字节数组
      * @throws com.tencent.bk.sdk.crypto.exception.CryptoException 加解密异常
      */
     byte[] encrypt(byte[] key, byte[] message);
@@ -50,11 +53,31 @@ public interface SymmetricCryptor {
      * 解密
      *
      * @param key              密钥字节数组，不可为null或空值
-     * @param encryptedMessage 加密后的密文字节数组，若为null或空值则原样返回
+     * @param encryptedMessage 含元数据前缀的加密后的密文字节数组，若为null或空值则原样返回
      * @return 解密后的明文字节数组
      * @throws com.tencent.bk.sdk.crypto.exception.CryptoException 加解密异常
      */
     byte[] decrypt(byte[] key, byte[] encryptedMessage);
+
+    /**
+     * 对输入流中的数据加密，并写入到输出流中（含元数据前缀）
+     * 注意：该方法不对输入流与输出流做关闭操作，需要外层调用方自行处理
+     *
+     * @param key 密钥
+     * @param in  输入流
+     * @param out 输出流
+     */
+    void encrypt(String key, InputStream in, OutputStream out);
+
+    /**
+     * 对输入流中的数据（含元数据前缀）解密，并写入到输出流中
+     * 注意：该方法不对输入流与输出流做关闭操作，需要外层调用方自行处理
+     *
+     * @param key 密钥
+     * @param in  输入流
+     * @param out 输出流
+     */
+    void decrypt(String key, InputStream in, OutputStream out);
 
     /**
      * 获取密文字符串的元数据前缀（用于标识该密文由何种加密器加密所得）
