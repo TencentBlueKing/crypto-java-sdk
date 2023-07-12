@@ -39,6 +39,9 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -52,7 +55,7 @@ import static com.tencent.kona.crypto.CryptoUtils.toHex;
  * 国密对称加密算法SM4相关操作工具类
  */
 @Slf4j
-public class SM4Util {
+public class SM4Util extends BasicCipherUtil {
 
     /**
      * Kona加解密算法Provider名称
@@ -84,7 +87,7 @@ public class SM4Util {
     }
 
     /**
-     * 使用SM4/GCM/NoPadding对明文内容进行加密
+     * 使用SM4/CTR/NoPadding对明文内容进行加密
      *
      * @param key     密钥字节数组
      * @param message 明文字节数组
@@ -93,8 +96,7 @@ public class SM4Util {
      */
     public static byte[] encrypt(byte[] key, byte[] message) {
         try {
-            byte[] iv = new byte[CTR_IV_LENGTH];
-            random.nextBytes(iv);
+            byte[] iv = getRandomIv();
             byte[] cipherBytes = encryptWithIV(key, iv, message);
             byte[] finalBytes = new byte[cipherBytes.length + CTR_IV_LENGTH];
             System.arraycopy(iv, 0, finalBytes, 0, iv.length);
@@ -106,7 +108,45 @@ public class SM4Util {
     }
 
     /**
-     * 使用SM4/GCM/NoPadding对密文内容进行解密
+     * 对输入流中的数据加密，并写入到输出流中
+     * 注意：该方法不对输入流与输出流做关闭操作，需要外层调用方自行处理
+     *
+     * @param key 密钥
+     * @param in  输入流
+     * @param out 输出流
+     */
+    public static void encrypt(String key, InputStream in, OutputStream out) throws Exception {
+        byte[] keyBytes = key.getBytes(StandardCharsets.UTF_8);
+        Cipher cipher = Cipher.getInstance(TRANSFORMATION_SM4_CTR_NO_PADDING, PROVIDER_NAME_KONA_CRYPTO);
+        SecretKey secretKey = new SecretKeySpec(paddingKey(keyBytes), ALGORITHM_SM4);
+        byte[] iv = getRandomIv();
+        IvParameterSpec paramSpec = new IvParameterSpec(iv);
+        cipher.init(Cipher.ENCRYPT_MODE, secretKey, paramSpec);
+        out.write(iv);
+        write(in, out, cipher);
+    }
+
+    private static byte[] encryptWithIV(byte[] key, byte[] iv, byte[] message) throws NoSuchPaddingException,
+        NoSuchAlgorithmException, NoSuchProviderException, InvalidAlgorithmParameterException,
+        InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
+        if (log.isDebugEnabled()) {
+            log.debug("key=" + toHex(key) + ",iv=" + toHex(iv) + ",message=" + toHex(message));
+        }
+        SecretKey secretKey = new SecretKeySpec(paddingKey(key), ALGORITHM_SM4);
+        IvParameterSpec paramSpec = new IvParameterSpec(iv);
+        Cipher cipher = Cipher.getInstance(TRANSFORMATION_SM4_CTR_NO_PADDING, PROVIDER_NAME_KONA_CRYPTO);
+        cipher.init(Cipher.ENCRYPT_MODE, secretKey, paramSpec);
+        return cipher.doFinal(message);
+    }
+
+    private static byte[] getRandomIv() {
+        byte[] iv = new byte[CTR_IV_LENGTH];
+        random.nextBytes(iv);
+        return iv;
+    }
+
+    /**
+     * 使用SM4/CTR/NoPadding对密文内容进行解密
      *
      * @param key                    密钥字节数组
      * @param encryptedMessageWithIV 首部含IV的密文字节数组
@@ -131,17 +171,24 @@ public class SM4Util {
         }
     }
 
-    private static byte[] encryptWithIV(byte[] key, byte[] iv, byte[] message) throws NoSuchPaddingException,
-        NoSuchAlgorithmException, NoSuchProviderException, InvalidAlgorithmParameterException,
-        InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
-        if (log.isDebugEnabled()) {
-            log.debug("key=" + toHex(key) + ",iv=" + toHex(iv) + ",message=" + toHex(message));
-        }
-        SecretKey secretKey = new SecretKeySpec(paddingKey(key), ALGORITHM_SM4);
-        IvParameterSpec paramSpec = new IvParameterSpec(iv);
+    /**
+     * 对输入流中的数据解密，并写入到输出流中
+     * 注意：该方法不对输入流与输出流做关闭操作，需要外层调用方自行处理
+     *
+     * @param key 密钥
+     * @param in  输入流
+     * @param out 输出流
+     */
+    public static void decrypt(String key, InputStream in, OutputStream out) throws Exception {
+        byte[] keyBytes = key.getBytes(StandardCharsets.UTF_8);
         Cipher cipher = Cipher.getInstance(TRANSFORMATION_SM4_CTR_NO_PADDING, PROVIDER_NAME_KONA_CRYPTO);
-        cipher.init(Cipher.ENCRYPT_MODE, secretKey, paramSpec);
-        return cipher.doFinal(message);
+        byte[] iv = new byte[cipher.getBlockSize()];
+        if (in.read(iv) < iv.length) {
+            throw new RuntimeException();
+        }
+        SecretKey secretKey = new SecretKeySpec(paddingKey(keyBytes), ALGORITHM_SM4);
+        cipher.init(Cipher.DECRYPT_MODE, secretKey, new IvParameterSpec(iv));
+        write(in, out, cipher);
     }
 
     private static byte[] decryptWithIV(byte[] key, byte[] iv, byte[] encryptedMessage) throws NoSuchPaddingException,

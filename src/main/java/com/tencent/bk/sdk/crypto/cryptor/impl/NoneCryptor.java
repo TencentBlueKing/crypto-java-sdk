@@ -28,6 +28,13 @@ package com.tencent.bk.sdk.crypto.cryptor.impl;
 import com.tencent.bk.sdk.crypto.annotation.Cryptor;
 import com.tencent.bk.sdk.crypto.cryptor.SymmetricCryptor;
 import com.tencent.bk.sdk.crypto.cryptor.consts.CryptorNames;
+import com.tencent.bk.sdk.crypto.exception.CryptoException;
+import org.apache.commons.io.IOUtils;
+import org.slf4j.helpers.FormattingTuple;
+import org.slf4j.helpers.MessageFormatter;
+
+import java.io.InputStream;
+import java.io.OutputStream;
 
 /**
  * 不做任何加密操作，直接返回明文/密文的加解密实现
@@ -47,6 +54,32 @@ public class NoneCryptor implements SymmetricCryptor {
     @Override
     public byte[] decrypt(byte[] key, byte[] encryptedMessage) {
         return encryptedMessage;
+    }
+
+    @Override
+    public void encrypt(String key, InputStream in, OutputStream out) {
+        try {
+            IOUtils.copy(in, out);
+        } catch (Exception e) {
+            FormattingTuple msg = MessageFormatter.format(
+                "Fail to encrypt using None, key.len={}",
+                key.length()
+            );
+            throw new CryptoException(msg.getMessage(), e);
+        }
+    }
+
+    @Override
+    public void decrypt(String key, InputStream in, OutputStream out) {
+        try {
+            IOUtils.copy(in, out);
+        } catch (Exception e) {
+            FormattingTuple msg = MessageFormatter.format(
+                "Fail to decrypt using None, key.len={}",
+                key.length()
+            );
+            throw new CryptoException(msg.getMessage(), e);
+        }
     }
 
     @Override

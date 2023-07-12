@@ -70,6 +70,7 @@ dependencies {
     implementation "org.slf4j:slf4j-api:1.7.30"
     implementation 'ch.qos.logback:logback-core:1.2.10'
     implementation 'ch.qos.logback:logback-classic:1.2.10'
+    implementation "commons-io:commons-io:2.6"
 
     // Use JUnit Jupiter API for testing.
     testImplementation 'org.projectlombok:lombok:1.18.20'
@@ -95,7 +96,7 @@ allprojects {
 }
 
 group = "com.tencent.bk.sdk"
-version = "0.0.7-SNAPSHOT"
+version = "0.0.8-SNAPSHOT"
 
 publishing {
     publications {

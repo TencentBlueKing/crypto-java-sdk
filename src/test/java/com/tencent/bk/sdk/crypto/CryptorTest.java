@@ -35,9 +35,14 @@ import com.tencent.bk.sdk.crypto.cryptor.consts.CryptorNames;
 import com.tencent.bk.sdk.crypto.exception.CryptoException;
 import com.tencent.bk.sdk.crypto.util.RSAUtil;
 import com.tencent.bk.sdk.crypto.util.SM2Util;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 
@@ -130,7 +135,7 @@ class CryptorTest {
     }
 
     @Test
-    void testSM4Cryptor() {
+    void testSM4Cryptor() throws Exception {
         // 空值用例
         // key与message同时为空，字节数组
         assertThrows(CryptoException.class, () -> sm4Cryptor.encrypt(EMPTY_KEY_BYTES, EMPTY_MESSAGE_BYTES));
@@ -168,10 +173,38 @@ class CryptorTest {
         System.out.println("realEncryptedMessage=" + realEncryptedMessage);
         String normalMessage = sm4Cryptor.decrypt(KEY, realEncryptedMessage);
         assertEquals(MESSAGE, normalMessage);
+
+        // 流数据
+        // 加密
+        InputStream in = AESUtilTest.class.getClassLoader().getResourceAsStream("fileToEncrypt.txt");
+        String outFilePath = new File("").getAbsolutePath() + "/out/encryptedFile.sm4Cryptor.encrypt";
+        FileOutputStream out = new FileOutputStream(outFilePath);
+        sm4Cryptor.encrypt(KEY, in, out);
+        if (in != null) {
+            in.close();
+        }
+        out.close();
+        // 解密
+        String inFilePath = new File("").getAbsolutePath() + "/out/encryptedFile.sm4Cryptor.encrypt";
+        in = new FileInputStream(inFilePath);
+        String decryptedFilePath = new File("").getAbsolutePath() + "/out/decryptedFile.sm4Cryptor.txt";
+        out = new FileOutputStream(decryptedFilePath);
+        sm4Cryptor.decrypt(KEY, in, out);
+        in.close();
+        out.close();
+        // 验证
+        in = AESUtilTest.class.getClassLoader().getResourceAsStream("fileToEncrypt.txt");
+        assert in != null;
+        String srcFileMd5 = DigestUtils.md5Hex(in);
+        FileInputStream fis = new FileInputStream(decryptedFilePath);
+        String decryptedFileMd5 = DigestUtils.md5Hex(fis);
+        assertEquals(srcFileMd5, decryptedFileMd5);
+        in.close();
+        fis.close();
     }
 
     @Test
-    void testAESCryptor() {
+    void testAESCryptor() throws Exception {
         // 空值用例
         // key与message同时为空，字节数组
         assertThrows(CryptoException.class, () -> aesCryptor.encrypt(EMPTY_KEY_BYTES, EMPTY_MESSAGE_BYTES));
@@ -208,6 +241,34 @@ class CryptorTest {
         System.out.println("realEncryptedMessage=" + realEncryptedMessage);
         String normalMessage = aesCryptor.decrypt(KEY, realEncryptedMessage);
         assertEquals(MESSAGE, normalMessage);
+
+        // 流数据
+        // 加密
+        InputStream in = AESUtilTest.class.getClassLoader().getResourceAsStream("fileToEncrypt.txt");
+        String outFilePath = new File("").getAbsolutePath() + "/out/encryptedFile.aesCryptor.encrypt";
+        FileOutputStream out = new FileOutputStream(outFilePath);
+        aesCryptor.encrypt(KEY, in, out);
+        if (in != null) {
+            in.close();
+        }
+        out.close();
+        // 解密
+        String inFilePath = new File("").getAbsolutePath() + "/out/encryptedFile.aesCryptor.encrypt";
+        in = new FileInputStream(inFilePath);
+        String decryptedFilePath = new File("").getAbsolutePath() + "/out/decryptedFile.aesCryptor.txt";
+        out = new FileOutputStream(decryptedFilePath);
+        aesCryptor.decrypt(KEY, in, out);
+        in.close();
+        out.close();
+        // 验证
+        in = AESUtilTest.class.getClassLoader().getResourceAsStream("fileToEncrypt.txt");
+        assert in != null;
+        String srcFileMd5 = DigestUtils.md5Hex(in);
+        FileInputStream fis = new FileInputStream(decryptedFilePath);
+        String decryptedFileMd5 = DigestUtils.md5Hex(fis);
+        assertEquals(srcFileMd5, decryptedFileMd5);
+        in.close();
+        fis.close();
     }
 
     @Test

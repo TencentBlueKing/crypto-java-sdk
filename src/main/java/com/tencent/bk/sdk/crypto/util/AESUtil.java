@@ -30,6 +30,9 @@ import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.SecureRandom;
@@ -37,7 +40,7 @@ import java.security.SecureRandom;
 /**
  * 对称加密算法AES相关操作工具类
  */
-public class AESUtil {
+public class AESUtil extends BasicCipherUtil {
     /**
      * 加密/解密算法/工作模式/填充方式
      */
@@ -72,6 +75,26 @@ public class AESUtil {
     }
 
     /**
+     * 对输入流中的数据加密，并写入到输出流中
+     * 注意：该方法不对输入流与输出流做关闭操作，需要外层调用方自行处理
+     *
+     * @param key 密钥
+     * @param in  输入流
+     * @param out 输出流
+     */
+    public static void encrypt(String key, InputStream in, OutputStream out) throws Exception {
+        byte[] keyBytes = key.getBytes(StandardCharsets.UTF_8);
+        Cipher cipher = Cipher.getInstance(CIPHER_ALGORITHM);
+        cipher.init(Cipher.ENCRYPT_MODE, getKeySpec(cipher, keyBytes));
+        byte[] arr = cipher.getIV();
+        if (arr == null) {
+            throw new RuntimeException(String.format("CIPHER_ALGORITHM %s is invalid", CIPHER_ALGORITHM));
+        }
+        out.write(arr);
+        write(in, out, cipher);
+    }
+
+    /**
      * 解密数据
      *
      * @param data 待解密数据
@@ -91,6 +114,25 @@ public class AESUtil {
         System.arraycopy(data, cipher.getBlockSize(), dataWithoutIv,
             0, data.length - cipher.getBlockSize());
         return cipher.doFinal(dataWithoutIv);
+    }
+
+    /**
+     * 对输入流中的数据解密，并写入到输出流中
+     * 注意：该方法不对输入流与输出流做关闭操作，需要外层调用方自行处理
+     *
+     * @param key 密钥
+     * @param in  输入流
+     * @param out 输出流
+     */
+    public static void decrypt(String key, InputStream in, OutputStream out) throws Exception {
+        byte[] keyBytes = key.getBytes(StandardCharsets.UTF_8);
+        Cipher cipher = Cipher.getInstance(CIPHER_ALGORITHM);
+        byte[] iv = new byte[cipher.getBlockSize()];
+        if (in.read(iv) < iv.length) {
+            throw new RuntimeException();
+        }
+        cipher.init(Cipher.DECRYPT_MODE, getKeySpec(cipher, keyBytes), new IvParameterSpec(iv));
+        write(in, out, cipher);
     }
 
     private static IvParameterSpec getIvSpec(Cipher cipher, byte[] data) {
