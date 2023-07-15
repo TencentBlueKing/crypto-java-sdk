@@ -96,7 +96,7 @@ allprojects {
 }
 
 group = "com.tencent.bk.sdk"
-version = "0.0.11-SNAPSHOT"
+version = "1.0.0"
 
 publishing {
     publications {
