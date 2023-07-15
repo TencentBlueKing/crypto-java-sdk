@@ -37,16 +37,6 @@ plugins {
     id 'signing'
 }
 
-task sourceJar(type: Jar) {
-    classifier "sources"
-    from sourceSets.main.allJava
-}
-
-task javadocJar(type: Jar, dependsOn: javadoc) {
-    classifier "javadoc"
-    from javadoc.destinationDir
-}
-
 repositories {
     // Use jcenter for resolving dependencies.
     // You can declare any Maven/Ivy/file repository here.
@@ -95,6 +85,31 @@ allprojects {
     }
 }
 
+task sourceJar(type: Jar) {
+    classifier "sources"
+    from sourceSets.main.allJava
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier "javadoc"
+    from javadoc.destinationDir
+}
+
+javadoc {
+    description = "javadoc for crypto-java-sdk"
+    options.memberLevel = JavadocMemberLevel.PROTECTED
+    options.author = true
+    options.version = true
+    options.header = project.name
+    // 不检查：非标的javadoc注解不报错
+    options.addStringOption('Xdoclint:none', '-quiet')
+    options.addStringOption("charset", "UTF-8")
+    logging.captureStandardError LogLevel.INFO
+    logging.captureStandardOutput LogLevel.INFO
+    options.encoding = "UTF-8"
+    options.charSet = "UTF-8"
+}
+
 group = "com.tencent.bk.sdk"
 version = "1.0.0"
 
@@ -103,6 +118,9 @@ publishing {
         mavenJava(MavenPublication) {
             artifactId = 'crypto-java-sdk'
             from components.java
+
+            artifact sourceJar
+            artifact javadocJar
 
             pom {
                 name = 'crypto-java-sdk'
