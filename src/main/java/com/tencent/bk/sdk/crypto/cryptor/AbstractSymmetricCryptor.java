@@ -130,7 +130,7 @@ public abstract class AbstractSymmetricCryptor implements SymmetricCryptor {
         BufferedInputStream bis = new BufferedInputStream(in);
         bis.mark(prefixBytes.length);
         try {
-            int n = in.read(cipherPrefixBytes);
+            int n = bis.read(cipherPrefixBytes);
             if (n != prefixBytes.length) {
                 bis.reset();
             } else if (!Arrays.equals(prefixBytes, cipherPrefixBytes)) {
