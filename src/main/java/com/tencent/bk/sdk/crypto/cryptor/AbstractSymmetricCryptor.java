@@ -30,6 +30,7 @@ import com.tencent.kona.crypto.CryptoUtils;
 import lombok.NonNull;
 import org.apache.commons.lang3.StringUtils;
 
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -126,11 +127,16 @@ public abstract class AbstractSymmetricCryptor implements SymmetricCryptor {
     public void decrypt(String key, InputStream in, OutputStream out) {
         byte[] prefixBytes = getStringCipherPrefix().getBytes(StandardCharsets.UTF_8);
         byte[] cipherPrefixBytes = new byte[prefixBytes.length];
+        BufferedInputStream bis = new BufferedInputStream(in);
+        bis.mark(prefixBytes.length);
         try {
             int n = in.read(cipherPrefixBytes);
-            assert n == prefixBytes.length;
-            assert Arrays.equals(prefixBytes, cipherPrefixBytes);
-            decryptIndeed(key, in, out);
+            if (n != prefixBytes.length) {
+                bis.reset();
+            } else if (!Arrays.equals(prefixBytes, cipherPrefixBytes)) {
+                bis.reset();
+            }
+            decryptIndeed(key, bis, out);
         } catch (IOException e) {
             throw new CryptoException("Fail to decrypt data in stream", e);
         }
