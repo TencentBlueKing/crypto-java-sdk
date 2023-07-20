@@ -127,8 +127,8 @@ public class CryptorMetaUtil {
     public static String getCryptorNameFromCipherStream(InputStream cipherIns) {
         String prefix = getCipherMetaPrefix();
         String suffix = getCipherMetaSuffix();
-        int algorithmMaxLength = 100;
-        int cipherMetaMaxLength = prefix.length() + suffix.length() + algorithmMaxLength;
+        int cryptorNameMaxLength = 100;
+        int cipherMetaMaxLength = prefix.length() + suffix.length() + cryptorNameMaxLength;
         cipherIns = new BufferedInputStream(cipherIns);
         cipherIns.mark(cipherMetaMaxLength);
         byte[] realPrefixBytes = new byte[prefix.length()];
@@ -146,19 +146,19 @@ public class CryptorMetaUtil {
                 );
                 return null;
             }
-            byte[] algorithmWithSuffixBytes = new byte[algorithmMaxLength + suffix.length()];
-            n = cipherIns.read(algorithmWithSuffixBytes);
-            String algorithmWithSuffix = new String(algorithmWithSuffixBytes);
-            int indexOfSuffix = algorithmWithSuffix.indexOf(suffix);
+            byte[] cryptorNameWithSuffixBytes = new byte[cryptorNameMaxLength + suffix.length()];
+            n = cipherIns.read(cryptorNameWithSuffixBytes);
+            String cryptorNameWithSuffix = new String(cryptorNameWithSuffixBytes);
+            int indexOfSuffix = cryptorNameWithSuffix.indexOf(suffix);
             if (indexOfSuffix == -1) {
                 log.info(
-                    "Cannot find cipherMetaSuffix: algorithmWithSuffixBytes={}, suffixBytes={}",
-                    Arrays.toString(algorithmWithSuffixBytes),
+                    "Cannot find cipherMetaSuffix: cryptorNameWithSuffixBytes={}, suffixBytes={}",
+                    Arrays.toString(cryptorNameWithSuffixBytes),
                     suffix.getBytes()
                 );
                 return null;
             }
-            return algorithmWithSuffix.substring(0, indexOfSuffix);
+            return cryptorNameWithSuffix.substring(0, indexOfSuffix);
         } catch (Exception e) {
             log.warn("Fail to read cipherMetaPrefix from cipherIns", e);
             return null;

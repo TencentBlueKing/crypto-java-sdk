@@ -40,7 +40,7 @@ import java.io.OutputStream;
 /**
  * 使用AES/CTR/NoPadding的加密实现
  */
-@Cryptor(name = CryptorNames.AES, type = CryptorTypeEnum.SYMMETRIC)
+@Cryptor(name = CryptorNames.AES, type = CryptorTypeEnum.SYMMETRIC, priority = 1)
 public class AESCryptor extends AbstractSymmetricCryptor {
 
     @Override

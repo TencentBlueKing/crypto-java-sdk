@@ -26,6 +26,7 @@ package com.tencent.bk.sdk.crypto.cryptor.impl;
 
 
 import com.tencent.bk.sdk.crypto.annotation.Cryptor;
+import com.tencent.bk.sdk.crypto.annotation.CryptorTypeEnum;
 import com.tencent.bk.sdk.crypto.cryptor.SymmetricCryptor;
 import com.tencent.bk.sdk.crypto.cryptor.consts.CryptorNames;
 import com.tencent.bk.sdk.crypto.exception.CryptoException;
@@ -39,7 +40,7 @@ import java.io.OutputStream;
 /**
  * 不做任何加密操作，直接返回明文/密文的加解密实现
  */
-@Cryptor(name = CryptorNames.NONE)
+@Cryptor(name = CryptorNames.NONE, type = CryptorTypeEnum.SYMMETRIC, priority = 1)
 public class NoneCryptor implements SymmetricCryptor {
     @Override
     public String getName() {
