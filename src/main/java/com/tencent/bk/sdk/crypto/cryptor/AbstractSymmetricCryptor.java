@@ -26,7 +26,7 @@ package com.tencent.bk.sdk.crypto.cryptor;
 
 import com.tencent.bk.sdk.crypto.exception.CryptoException;
 import com.tencent.bk.sdk.crypto.util.Base64Util;
-import com.tencent.kona.crypto.CryptoUtils;
+import com.tencent.bk.sdk.crypto.util.CryptorMetaUtil;
 import lombok.NonNull;
 import org.apache.commons.lang3.StringUtils;
 
@@ -83,11 +83,7 @@ public abstract class AbstractSymmetricCryptor implements SymmetricCryptor {
             return message;
         }
         byte[] encryptedBytes = encryptIndeed(key, message);
-        byte[] prefixBytes = getStringCipherPrefix().getBytes(StandardCharsets.UTF_8);
-        byte[] finalBytes = new byte[encryptedBytes.length + prefixBytes.length];
-        System.arraycopy(prefixBytes, 0, finalBytes, 0, prefixBytes.length);
-        System.arraycopy(encryptedBytes, 0, finalBytes, prefixBytes.length, encryptedBytes.length);
-        return finalBytes;
+        return CryptorMetaUtil.addPrefixToEncryptedBytes(getStringCipherPrefix(), encryptedBytes);
     }
 
     public byte[] decrypt(byte[] key, byte[] encryptedMessage) {
@@ -97,20 +93,12 @@ public abstract class AbstractSymmetricCryptor implements SymmetricCryptor {
         if (encryptedMessage == null || encryptedMessage.length == 0) {
             return encryptedMessage;
         }
-        byte[] expectedPrefixBytes = getStringCipherPrefix().getBytes(StandardCharsets.UTF_8);
+        String prefix = getStringCipherPrefix();
+        byte[] expectedPrefixBytes = prefix.getBytes(StandardCharsets.UTF_8);
         if (encryptedMessage.length < expectedPrefixBytes.length) {
             throw new CryptoException("encryptedMessage is invalid: cannot find enough prefix bytes");
         }
-        byte[] prefixBytes = new byte[expectedPrefixBytes.length];
-        System.arraycopy(encryptedMessage, 0, prefixBytes, 0, prefixBytes.length);
-        if (!Arrays.equals(prefixBytes, expectedPrefixBytes)) {
-            throw new CryptoException(
-                "encryptedMessage is invalid: prefix bytes unexpected, whose hex should be: " +
-                    CryptoUtils.toHex(expectedPrefixBytes)
-            );
-        }
-        byte[] pureEncryptedBytes = new byte[encryptedMessage.length - prefixBytes.length];
-        System.arraycopy(encryptedMessage, prefixBytes.length, pureEncryptedBytes, 0, pureEncryptedBytes.length);
+        byte[] pureEncryptedBytes = CryptorMetaUtil.removePrefixFromEncryptedBytes(prefix, encryptedMessage);
         return decryptIndeed(key, pureEncryptedBytes);
     }
 
@@ -145,7 +133,7 @@ public abstract class AbstractSymmetricCryptor implements SymmetricCryptor {
     public abstract String getName();
 
     public String getStringCipherPrefix() {
-        return CryptorMetaDefinition.getCipherMetaPrefix() + getName() + CryptorMetaDefinition.getCipherMetaSuffix();
+        return CryptorMetaUtil.getCipherMetaPrefix() + getName() + CryptorMetaUtil.getCipherMetaSuffix();
     }
 
     @Override

@@ -26,6 +26,7 @@ package com.tencent.bk.sdk.crypto.cryptor;
 
 import com.tencent.bk.sdk.crypto.exception.CryptoException;
 import com.tencent.bk.sdk.crypto.util.Base64Util;
+import com.tencent.bk.sdk.crypto.util.CryptorMetaUtil;
 import lombok.NonNull;
 import org.apache.commons.lang3.StringUtils;
 
@@ -46,7 +47,8 @@ public abstract class AbstractASymmetricCryptor implements ASymmetricCryptor {
         if (message == null || message.length == 0) {
             return message;
         }
-        return encryptIndeed(publicKey, message);
+        byte[] encryptedBytes = encryptIndeed(publicKey, message);
+        return CryptorMetaUtil.addPrefixToEncryptedBytes(getStringCipherPrefix(), encryptedBytes);
     }
 
     public byte[] decrypt(PrivateKey privateKey, byte[] encryptedMessage) {
@@ -56,7 +58,10 @@ public abstract class AbstractASymmetricCryptor implements ASymmetricCryptor {
         if (encryptedMessage == null || encryptedMessage.length == 0) {
             return encryptedMessage;
         }
-        return decryptIndeed(privateKey, encryptedMessage);
+        byte[] pureEncryptedBytes = CryptorMetaUtil.removePrefixFromEncryptedBytes(
+            getStringCipherPrefix(), encryptedMessage
+        );
+        return decryptIndeed(privateKey, pureEncryptedBytes);
     }
 
     public abstract String getName();
@@ -73,7 +78,7 @@ public abstract class AbstractASymmetricCryptor implements ASymmetricCryptor {
         if (StringUtils.isEmpty(message)) {
             return message;
         }
-        byte[] encryptedMessage = encrypt(
+        byte[] encryptedMessage = encryptIndeed(
             publicKey,
             message.getBytes(StandardCharsets.UTF_8)
         );
@@ -95,7 +100,7 @@ public abstract class AbstractASymmetricCryptor implements ASymmetricCryptor {
         }
         String base64EncryptedMessage = StringUtils.removeStart(base64MessageWithPrefix, getStringCipherPrefix());
         byte[] rawEncryptedMessage = Base64Util.decodeContentToByte(base64EncryptedMessage);
-        byte[] decryptedMessage = decrypt(
+        byte[] decryptedMessage = decryptIndeed(
             privateKey,
             rawEncryptedMessage
         );
