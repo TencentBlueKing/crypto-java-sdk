@@ -111,7 +111,7 @@ javadoc {
 }
 
 group = "com.tencent.bk.sdk"
-version = "1.0.1-SNAPSHOT"
+version = "1.0.1"
 
 publishing {
     publications {
