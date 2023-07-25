@@ -37,6 +37,9 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -84,6 +87,10 @@ class AESUtilTest {
         // 加密
         InputStream in = AESUtilTest.class.getClassLoader().getResourceAsStream("fileToEncrypt.txt");
         String outFilePath = new File("").getAbsolutePath() + "/out/encryptedFile.encrypt";
+        Path parent = Paths.get(outFilePath).getParent();
+        if (!Files.exists(parent)) {
+            Files.createDirectories(parent);
+        }
         FileOutputStream out = new FileOutputStream(outFilePath);
         AESUtil.encrypt(KEY, in, out);
         if (in != null) {
