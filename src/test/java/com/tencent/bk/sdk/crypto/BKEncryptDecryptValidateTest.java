@@ -186,10 +186,6 @@ class BKEncryptDecryptValidateTest {
                 System.out.println("mkdir parent dir fail!dir:" + parentDir.getAbsolutePath());
                 return false;
             }
-            if (!parentDir.setWritable(true, false)) {
-                System.out.println("set parent dir writeable fail!dir:" + parentDir.getAbsolutePath());
-                return false;
-            }
         }
         return true;
     }
