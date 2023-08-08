@@ -11,14 +11,14 @@ import org.junit.jupiter.api.Test;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Random;
 
 public class SM4StreamTest {
     @Test
     public void inputAndOutputTest() throws IOException {
-        byte[] data = new byte[1024];
-        new Random().nextBytes(data);
+        byte[] data = createTempData(1024);
         String key = "secretKey";
 
         // 明文转换成密文
@@ -35,9 +35,48 @@ public class SM4StreamTest {
         Assertions.assertArrayEquals(data, decryptData);
 
         // 密文转换成明文
-        SM4InputStream sm4InputStream = new SM4InputStream(new ByteArrayInputStream(encryptData), key);
+        assertSuccessDecrypt(data, new ByteArrayInputStream(encryptData), key, StreamUtils.BUFFER_SIZE);
+    }
+
+    @Test
+    public void bufferSizeTest() throws IOException {
+        byte[] data = createTempData(1024);
+        String secretKey = "secretKey";
+        byte[] key = secretKey.getBytes(StandardCharsets.UTF_8);
+        byte[] encryptData = SM4Util.encrypt(key, data);
+
+        assertSuccessDecrypt(data, new ByteArrayInputStream(encryptData), secretKey, 1);
+        assertSuccessDecrypt(data, new ByteArrayInputStream(encryptData), secretKey, 1024);
+        assertSuccessDecrypt(data, new ByteArrayInputStream(encryptData), secretKey, 10240);
+        int randomSize = new Random().nextInt(65535);
+        assertSuccessDecrypt(data, new ByteArrayInputStream(encryptData), secretKey, randomSize);
+    }
+
+    @Test
+    public void dataSizeTest() throws IOException {
+        String secretKey = "secretKey";
+        byte[] key = secretKey.getBytes(StandardCharsets.UTF_8);
+
+        byte[] data = createTempData(1);
+        assertSuccessDecrypt(data, new ByteArrayInputStream(SM4Util.encrypt(key, data)), secretKey, 8192);
+
+        byte[] data2 = createTempData(8192);
+        assertSuccessDecrypt(data2, new ByteArrayInputStream(SM4Util.encrypt(key, data2)), secretKey, 8192);
+
+        byte[] data3 = createTempData(65535);
+        assertSuccessDecrypt(data3, new ByteArrayInputStream(SM4Util.encrypt(key, data3)), secretKey, 8192);
+    }
+
+    private byte[] createTempData(int size) {
+        byte[] data = new byte[size];
+        new Random().nextBytes(data);
+        return data;
+    }
+
+    private void assertSuccessDecrypt(byte[] except, InputStream in, String key, int size) throws IOException {
+        SM4InputStream sm4InputStream = new SM4InputStream(in, key, size);
         ByteArrayOutputStream plainOutputStream = new ByteArrayOutputStream();
         StreamUtils.copy(sm4InputStream, plainOutputStream);
-        Assertions.assertArrayEquals(data, plainOutputStream.toByteArray());
+        Assertions.assertArrayEquals(except, plainOutputStream.toByteArray());
     }
 }

@@ -19,6 +19,9 @@ public class CipherOutputStream extends FilterOutputStream {
 
     public CipherOutputStream(OutputStream out, Cipher cipher) {
         super(out);
+        if (out == null) {
+            throw new NullPointerException();
+        }
         this.cipher = cipher;
         this.iv = cipher.getIV();
     }
@@ -58,6 +61,7 @@ public class CipherOutputStream extends FilterOutputStream {
     @Override
     public void close() throws IOException {
         if (!closed) {
+            flush();
             out.close();
             closed = true;
         }

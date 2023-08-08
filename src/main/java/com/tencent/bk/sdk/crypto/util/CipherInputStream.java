@@ -52,6 +52,11 @@ public class CipherInputStream extends FilterInputStream {
      */
     public CipherInputStream(InputStream in, Cipher cipher, int size) {
         super(in);
+        if (in == null) {
+            throw new NullPointerException();
+        } else if (size <= 0) {
+            throw new IllegalArgumentException("buffer size <= 0");
+        }
         buf = new byte[size];
         this.cipher = cipher;
     }
@@ -83,8 +88,9 @@ public class CipherInputStream extends FilterInputStream {
             int read = 0;
             do {
                 int rz = readableSize();
-                System.arraycopy(plainData, plainDataPos, b, off, rz);
-                plainDataPos += rz;
+                int size = Math.min(rz, b.length - off);
+                System.arraycopy(plainData, plainDataPos, b, off, size);
+                plainDataPos += size;
                 off += rz;
                 read += rz;
                 if (readableSize() <= 0 && fill() == -1) {
