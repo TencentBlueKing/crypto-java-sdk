@@ -27,6 +27,7 @@
  */
 package com.tencent.bk.sdk.crypto.util;
 
+import com.tencent.bk.sdk.crypto.exception.CryptoException;
 import com.tencent.bk.sdk.crypto.exception.SM4DecryptException;
 import com.tencent.bk.sdk.crypto.exception.SM4EncryptException;
 import com.tencent.kona.crypto.KonaCryptoProvider;
@@ -35,17 +36,13 @@ import lombok.extern.slf4j.Slf4j;
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.security.SecureRandom;
 import java.security.Security;
 
@@ -116,33 +113,12 @@ public class SM4Util extends BasicCipherUtil {
      * @param out 输出流
      */
     public static void encrypt(String key, InputStream in, OutputStream out) throws Exception {
-        byte[] keyBytes = key.getBytes(StandardCharsets.UTF_8);
-        Cipher cipher = Cipher.getInstance(TRANSFORMATION_SM4_CTR_NO_PADDING, PROVIDER_NAME_KONA_CRYPTO);
-        SecretKey secretKey = new SecretKeySpec(paddingKey(keyBytes), ALGORITHM_SM4);
-        byte[] iv = getRandomIv();
-        IvParameterSpec paramSpec = new IvParameterSpec(iv);
-        cipher.init(Cipher.ENCRYPT_MODE, secretKey, paramSpec);
-        out.write(iv);
-        write(in, out, cipher);
-    }
-
-    private static byte[] encryptWithIV(byte[] key, byte[] iv, byte[] message) throws NoSuchPaddingException,
-        NoSuchAlgorithmException, NoSuchProviderException, InvalidAlgorithmParameterException,
-        InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
-        if (log.isDebugEnabled()) {
-            log.debug("key=" + toHex(key) + ",iv=" + toHex(iv) + ",message=" + toHex(message));
+        Cipher cipher = creatEncryptCipher(key);
+        byte[] iv = cipher.getIV();
+        if (iv != null) {
+            out.write(iv);
         }
-        SecretKey secretKey = new SecretKeySpec(paddingKey(key), ALGORITHM_SM4);
-        IvParameterSpec paramSpec = new IvParameterSpec(iv);
-        Cipher cipher = Cipher.getInstance(TRANSFORMATION_SM4_CTR_NO_PADDING, PROVIDER_NAME_KONA_CRYPTO);
-        cipher.init(Cipher.ENCRYPT_MODE, secretKey, paramSpec);
-        return cipher.doFinal(message);
-    }
-
-    private static byte[] getRandomIv() {
-        byte[] iv = new byte[CTR_IV_LENGTH];
-        random.nextBytes(iv);
-        return iv;
+        write(in, out, cipher);
     }
 
     /**
@@ -157,7 +133,7 @@ public class SM4Util extends BasicCipherUtil {
         try {
             if (encryptedMessageWithIV.length < CTR_IV_LENGTH) {
                 throw new SM4DecryptException(
-                    "Unexpected encryptedMessageWithIV length:" + encryptedMessageWithIV.length
+                        "Unexpected encryptedMessageWithIV length:" + encryptedMessageWithIV.length
                 );
             }
             byte[] iv = new byte[CTR_IV_LENGTH];
@@ -180,28 +156,82 @@ public class SM4Util extends BasicCipherUtil {
      * @param out 输出流
      */
     public static void decrypt(String key, InputStream in, OutputStream out) throws Exception {
-        byte[] keyBytes = key.getBytes(StandardCharsets.UTF_8);
-        Cipher cipher = Cipher.getInstance(TRANSFORMATION_SM4_CTR_NO_PADDING, PROVIDER_NAME_KONA_CRYPTO);
-        byte[] iv = new byte[cipher.getBlockSize()];
-        if (in.read(iv) < iv.length) {
-            throw new RuntimeException();
-        }
-        SecretKey secretKey = new SecretKeySpec(paddingKey(keyBytes), ALGORITHM_SM4);
-        cipher.init(Cipher.DECRYPT_MODE, secretKey, new IvParameterSpec(iv));
+        Cipher cipher = creatDecryptCipher(key, in);
         write(in, out, cipher);
     }
 
-    private static byte[] decryptWithIV(byte[] key, byte[] iv, byte[] encryptedMessage) throws NoSuchPaddingException,
-        NoSuchAlgorithmException, NoSuchProviderException, InvalidAlgorithmParameterException,
-        InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
+    /**
+     * 使用key创建一个用于加密的密码器，带有随机iv值
+     *
+     * @param key 密钥
+     */
+    public static Cipher creatEncryptCipher(String key) {
+        byte[] keyBytes = key.getBytes(StandardCharsets.UTF_8);
+        byte[] iv = getRandomIv();
+        return creatCipher(keyBytes, iv, Cipher.ENCRYPT_MODE);
+    }
+
+    /**
+     * 从key和流中创建一个用于解密的密码器，iv值在流的头16个字节
+     *
+     * @param key 密钥
+     * @param in  输入流
+     */
+    public static Cipher creatDecryptCipher(String key, InputStream in) {
+        try {
+            byte[] iv = new byte[CTR_IV_LENGTH];
+            int read = in.read(iv);
+            if (read != CTR_IV_LENGTH) {
+                throw new IllegalStateException("Broken iv data.");
+            }
+            byte[] keyBytes = key.getBytes(StandardCharsets.UTF_8);
+            return creatCipher(keyBytes, iv, Cipher.DECRYPT_MODE);
+        } catch (IOException e) {
+            throw new CryptoException("Create cipher error", e);
+        }
+    }
+
+    /**
+     * 使用指定的key和iv数据创建对应mode的密码器
+     *
+     * @param keyBytes 密钥数据
+     * @param iv       iv数据
+     * @param mode     密码器工作模式
+     */
+    public static Cipher creatCipher(byte[] keyBytes, byte[] iv, int mode) {
+        try {
+            Cipher cipher = Cipher.getInstance(TRANSFORMATION_SM4_CTR_NO_PADDING, PROVIDER_NAME_KONA_CRYPTO);
+            SecretKey secretKey = new SecretKeySpec(paddingKey(keyBytes), ALGORITHM_SM4);
+            IvParameterSpec paramSpec = new IvParameterSpec(iv);
+            cipher.init(mode, secretKey, paramSpec);
+            return cipher;
+        } catch (Exception e) {
+            throw new CryptoException("Create cipher error", e);
+        }
+    }
+
+    private static byte[] decryptWithIV(byte[] key, byte[] iv, byte[] encryptedMessage) throws
+            BadPaddingException, IllegalBlockSizeException {
         if (log.isDebugEnabled()) {
             log.debug("key=" + toHex(key) + ",iv=" + toHex(iv) + ",encryptedMessage=" + toHex(encryptedMessage));
         }
-        SecretKey secretKey = new SecretKeySpec(paddingKey(key), ALGORITHM_SM4);
-        IvParameterSpec paramSpec = new IvParameterSpec(iv);
-        Cipher cipher = Cipher.getInstance(TRANSFORMATION_SM4_CTR_NO_PADDING, PROVIDER_NAME_KONA_CRYPTO);
-        cipher.init(Cipher.DECRYPT_MODE, secretKey, paramSpec);
+        Cipher cipher = creatCipher(key, iv, Cipher.DECRYPT_MODE);
         return cipher.doFinal(encryptedMessage);
+    }
+
+    private static byte[] encryptWithIV(byte[] key, byte[] iv, byte[] message) throws
+            BadPaddingException, IllegalBlockSizeException {
+        if (log.isDebugEnabled()) {
+            log.debug("key=" + toHex(key) + ",iv=" + toHex(iv) + ",message=" + toHex(message));
+        }
+        Cipher cipher = creatCipher(key, iv, Cipher.ENCRYPT_MODE);
+        return cipher.doFinal(message);
+    }
+
+    private static byte[] getRandomIv() {
+        byte[] iv = new byte[CTR_IV_LENGTH];
+        random.nextBytes(iv);
+        return iv;
     }
 
     /**
