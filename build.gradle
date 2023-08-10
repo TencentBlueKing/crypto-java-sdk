@@ -49,18 +49,18 @@ repositories {
 dependencies {
 
     // This dependency is used internally, and not exposed to consumers on their own compile classpath.
-    implementation 'com.tencent.kona:kona-crypto:1.0.8'
-    implementation 'com.tencent.kona:kona-pkix:1.0.8'
+    api 'com.tencent.kona:kona-crypto:1.0.8'
+    api 'com.tencent.kona:kona-pkix:1.0.8'
 
-    implementation 'org.projectlombok:lombok:1.18.20'
+    api 'org.projectlombok:lombok:1.18.20'
     annotationProcessor 'org.projectlombok:lombok:1.18.20'
 
-    implementation 'org.apache.commons:commons-lang3:3.9'
-    implementation 'commons-codec:commons-codec:1.14'
-    implementation "org.slf4j:slf4j-api:1.7.30"
-    implementation 'ch.qos.logback:logback-core:1.2.10'
-    implementation 'ch.qos.logback:logback-classic:1.2.10'
-    implementation "commons-io:commons-io:2.6"
+    api 'org.apache.commons:commons-lang3:3.9'
+    api 'commons-codec:commons-codec:1.14'
+    api "org.slf4j:slf4j-api:1.7.30"
+    api 'ch.qos.logback:logback-core:1.2.10'
+    api 'ch.qos.logback:logback-classic:1.2.10'
+    api "commons-io:commons-io:2.6"
 
     // Use JUnit Jupiter API for testing.
     testImplementation 'org.projectlombok:lombok:1.18.20'
@@ -111,7 +111,7 @@ javadoc {
 }
 
 group = "com.tencent.bk.sdk"
-version = "1.1.0"
+version = "1.1.1"
 
 publishing {
     publications {
