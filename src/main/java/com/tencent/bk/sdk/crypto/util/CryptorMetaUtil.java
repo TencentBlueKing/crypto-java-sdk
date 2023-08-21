@@ -124,12 +124,11 @@ public class CryptorMetaUtil {
      * @param cipherIns 密文输入流
      * @return 加密器名称，如果密文不包含指定前缀的元数据则返回null
      */
-    public static String getCryptorNameFromCipherStream(InputStream cipherIns) {
+    public static String getCryptorNameFromCipherStream(BufferedInputStream cipherIns) {
         String prefix = getCipherMetaPrefix();
         String suffix = getCipherMetaSuffix();
         int cryptorNameMaxLength = 100;
         int cipherMetaMaxLength = prefix.length() + suffix.length() + cryptorNameMaxLength;
-        cipherIns = new BufferedInputStream(cipherIns);
         cipherIns.mark(cipherMetaMaxLength);
         byte[] realPrefixBytes = new byte[prefix.length()];
         try {
