@@ -107,6 +107,9 @@ public class CryptorMetaUtil {
      * @return 加密器名称，如果密文不包含指定前缀的元数据则返回null
      */
     public static String getCryptorNameFromCipher(String cipher) {
+        if (null == cipher) {
+            return null;
+        }
         String prefix = getCipherMetaPrefix();
         if (cipher.startsWith(prefix)) {
             int indexOfPrefixLastChar = cipher.indexOf(getCipherMetaSuffix());
