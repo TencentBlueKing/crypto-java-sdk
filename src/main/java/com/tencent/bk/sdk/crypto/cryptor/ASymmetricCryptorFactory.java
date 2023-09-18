@@ -34,6 +34,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -43,11 +44,19 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class ASymmetricCryptorFactory {
 
     static Map<String, ASymmetricCryptor> aSymmetricCryptorMap = new ConcurrentHashMap<>();
-    static AtomicBoolean load = new AtomicBoolean(false);
+    static AtomicBoolean loading = new AtomicBoolean(false);
+    static CountDownLatch latch = new CountDownLatch(1);
 
     public static ASymmetricCryptor getCryptor(String name) {
-        if (!load.get()) {
+        if (!loading.get()) {
             init();
+        }
+        if (latch.getCount() > 0) {
+            try {
+                latch.await();
+            } catch (InterruptedException e) {
+                log.error("wait for ASymmetricCryptorFactory load interrupted", e);
+            }
         }
         ASymmetricCryptor cryptor = aSymmetricCryptorMap.get(name);
         if (cryptor != null) {
@@ -57,10 +66,19 @@ public class ASymmetricCryptorFactory {
     }
 
     private static void init() {
-
-        if (!load.compareAndSet(false, true)) {
+        if (!loading.compareAndSet(false, true)) {
             return;
         }
+        try {
+            findCryptors();
+        } catch (Exception e) {
+            log.error("Exception occurred when findCryptors", e);
+        } finally {
+            latch.countDown();
+        }
+    }
+
+    private static void findCryptors() {
 
         ServiceLoader<ASymmetricCryptor> serviceLoader = ServiceLoader.load(ASymmetricCryptor.class);
 
